@@ -1,76 +1,100 @@
-import { useState, useEffect } from 'react';
-import CoverEditorAvancado from './components/CoverEditorAvancado';
-import GeradorLote from './components/GeradorLote';
+import { useState, useEffect } from "react";
+import CoverEditorAvancado from "./components/CoverEditorAvancado";
+import GeradorLote from "./components/GeradorLote";
 import imgLogoGrupo from "../imports/logo_potencial_dark.png";
 import imgLogoPotencialFooter from "../imports/Logo_-_Potencial_Tecnologia_Horizontal_Negativa__2-2.png";
+import { LayoutDashboard, Layers } from "lucide-react";
 
-type Modo = 'editor' | 'lote';
+type Modo = "editor" | "lote";
 
 export default function App() {
-  const [modo, setModo] = useState<Modo>('editor');
+  const [modo, setModo] = useState<Modo>("editor");
 
   useEffect(() => {
-    document.title = 'Gerador de Capas LinkedIn - Parcele Aqui | Potencial Tecnologia';
+    document.title = "Gerador de Capas LinkedIn — Parcele Aqui | Potencial Tecnologia";
   }, []);
 
   return (
-    <div className="w-full min-h-screen bg-[#0f0f0f] flex flex-col font-['Poppins',sans-serif]">
+    <div className="w-full min-h-screen bg-[#0b0b0b] flex flex-col font-['Poppins',sans-serif]">
       {/* Header */}
-      <div className="p-4 bg-[#1a1a1a] shadow-lg border-b border-gray-800">
-        <div className="max-w-7xl mx-auto">
-          {/* Logo Grupo Potencial, Título e Botões */}
-          <div className="flex items-center justify-between">
+      <header className="sticky top-0 z-50 bg-[#111111]/95 backdrop-blur-md border-b border-gray-800/80">
+        <div className="max-w-[1400px] mx-auto px-6 py-4">
+          <div className="flex items-center justify-between flex-wrap gap-4">
             <div className="flex items-center gap-4">
-              <img src={imgLogoGrupo} alt="Grupo Potencial" className="h-10" />
-              <div className="h-8 w-px bg-gray-700"></div>
-              <h1 className="text-xl font-bold text-white font-['Archivo',sans-serif]">Template Capa LinkedIn - Parcele Aqui</h1>
+              <img src={imgLogoGrupo} alt="Grupo Potencial" className="h-9" />
+              <div className="hidden sm:block h-8 w-px bg-gray-700" />
+              <div className="hidden sm:block">
+                <h1 className="text-base font-bold text-white font-['Archivo',sans-serif] leading-tight">
+                  Gerador de Capas LinkedIn
+                </h1>
+                <p className="text-xs text-gray-500">Parcele Aqui · Parcele News</p>
+              </div>
             </div>
 
-            {/* Botões de Navegação alinhados à direita */}
-            <div className="flex gap-2">
-              <button
-                onClick={() => setModo('editor')}
-                className={`px-4 py-2 rounded-md transition-colors font-bold ${
-                  modo === 'editor'
-                    ? 'bg-[#FFC528] text-black shadow-lg'
-                    : 'bg-[#2a2a2a] text-gray-300 hover:bg-[#353535]'
-                }`}
-              >
-                Editor Individual
-              </button>
-              <button
-                onClick={() => setModo('lote')}
-                className={`px-4 py-2 rounded-md transition-colors font-bold ${
-                  modo === 'lote'
-                    ? 'bg-[#FFC528] text-black shadow-lg'
-                    : 'bg-[#2a2a2a] text-gray-300 hover:bg-[#353535]'
-                }`}
-              >
-                Gerador em Lote
-              </button>
-            </div>
+            {/* Tabs de navegação */}
+            <nav className="flex bg-[#1a1a1a] rounded-lg p-1 border border-gray-800">
+              <TabButton
+                active={modo === "editor"}
+                onClick={() => setModo("editor")}
+                icon={<LayoutDashboard size={16} />}
+                label="Editor"
+              />
+              <TabButton
+                active={modo === "lote"}
+                onClick={() => setModo("lote")}
+                icon={<Layers size={16} />}
+                label="Lote"
+              />
+            </nav>
           </div>
         </div>
-      </div>
+      </header>
 
-      {/* Content */}
-      <div className="flex-1">
-        {modo === 'editor' && <CoverEditorAvancado />}
-        {modo === 'lote' && <GeradorLote />}
-      </div>
+      {/* Conteúdo */}
+      <main className="flex-1">
+        {modo === "editor" && <CoverEditorAvancado />}
+        {modo === "lote" && <GeradorLote />}
+      </main>
 
       {/* Footer */}
-      <div className="p-4 bg-[#1a1a1a] border-t border-gray-800">
-        <div className="max-w-7xl mx-auto flex items-center justify-center gap-3">
-          <span className="text-gray-400 text-sm">Desenvolvido por</span>
+      <footer className="bg-[#111111] border-t border-gray-800/80">
+        <div className="max-w-[1400px] mx-auto px-6 py-5 flex items-center justify-center gap-3 flex-wrap">
+          <span className="text-gray-500 text-xs">Desenvolvido por</span>
           <img
             src={imgLogoPotencialFooter}
             alt="Potencial Tecnologia"
-            style={{ height: '96px' }}
+            className="h-12 opacity-90"
           />
-          <span className="text-gray-400 text-sm">• V1.0 • 2026</span>
+          <span className="text-gray-500 text-xs">• v1.1 • 2026</span>
         </div>
-      </div>
+      </footer>
     </div>
+  );
+}
+
+function TabButton({
+  active,
+  onClick,
+  icon,
+  label,
+}: {
+  active: boolean;
+  onClick: () => void;
+  icon: React.ReactNode;
+  label: string;
+}) {
+  return (
+    <button
+      onClick={onClick}
+      className={`flex items-center gap-2 px-4 py-2 rounded-md text-sm font-bold transition-all ${
+        active
+          ? "bg-[#FFC528] text-black shadow-md"
+          : "text-gray-400 hover:text-white hover:bg-[#242424]"
+      }`}
+      aria-pressed={active}
+    >
+      {icon}
+      {label}
+    </button>
   );
 }

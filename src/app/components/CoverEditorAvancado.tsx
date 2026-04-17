@@ -1,8 +1,8 @@
-import { useState, useRef } from 'react';
-import LinkedInCover from './LinkedInCover';
-import * as LucideIcons from 'lucide-react';
-import { toPng } from 'html-to-image';
-import UnsplashSearch from './UnsplashSearch';
+import { useState, useRef, useMemo } from "react";
+import LinkedInCover from "./LinkedInCover";
+import * as LucideIcons from "lucide-react";
+import UnsplashSearch from "./UnsplashSearch";
+import { gerarCapaPNG } from "../lib/gerarCapa";
 
 const iconesDisponiveis = {
   CreditCard: LucideIcons.CreditCard,
@@ -29,229 +29,384 @@ const iconesDisponiveis = {
 
 function IconeCustomizado({ IconeComponente }: { IconeComponente: any }) {
   return (
-    <div className="absolute left-[72px] top-[282px] flex items-center justify-center" style={{ width: '80px', height: '80px' }}>
+    <div
+      className="absolute left-[72px] top-[282px] flex items-center justify-center"
+      style={{ width: "80px", height: "80px" }}
+    >
       <IconeComponente size={48} strokeWidth={1.5} color="#371B01" />
     </div>
   );
 }
+
+type Status = { tipo: "idle" } | { tipo: "gerando" } | { tipo: "sucesso" } | { tipo: "erro"; msg: string };
 
 export default function CoverEditorAvancado() {
   const [numero, setNumero] = useState("49");
   const [titulo, setTitulo] = useState("Mercado B2C: o uso estratégico e consciente do parcelamento");
   const [legendaLinha1, setLegendaLinha1] = useState("Tecnologia que destrava");
   const [legendaLinha2, setLegendaLinha2] = useState("o seu dia a dia financeiro.");
-  const [fotoUrl, setFotoUrl] = useState("figma:asset/94f0de88dd7da2aa7b58f6680bcc081b5b16c90f.png");
+  const [fotoUrl, setFotoUrl] = useState("/assets/94f0de88dd7da2aa7b58f6680bcc081b5b16c90f.png");
   const [iconeEscolhido, setIconeEscolhido] = useState<string>("CreditCard");
   const [usarLegenda1, setUsarLegenda1] = useState(true);
   const [usarSubtitulo, setUsarSubtitulo] = useState(true);
+  const [status, setStatus] = useState<Status>({ tipo: "idle" });
   const capaRef = useRef<HTMLDivElement>(null);
 
   const IconeComponente = iconesDisponiveis[iconeEscolhido as keyof typeof iconesDisponiveis];
+  const caracteresTitulo = titulo.length;
+  const tituloLongo = caracteresTitulo > 80;
+
+  const nomeArquivo = useMemo(() => {
+    const slug = titulo
+      .toLowerCase()
+      .normalize("NFD")
+      .replace(/[\u0300-\u036f]/g, "")
+      .replace(/[^a-z0-9]+/g, "-")
+      .replace(/^-+|-+$/g, "")
+      .slice(0, 40);
+    return `parcele-news-${numero}-${slug || "capa"}`;
+  }, [numero, titulo]);
 
   const gerarImagem = async () => {
     if (!capaRef.current) {
-      alert('Erro: Não foi possível encontrar a capa para gerar a imagem.');
+      setStatus({ tipo: "erro", msg: "Capa não encontrada no DOM." });
       return;
     }
-
-    try {
-      // Aguardar todas as fontes carregarem
-      await document.fonts.ready;
-
-      // Validar que todas as imagens carregaram
-      const container = capaRef.current;
-      const images = container.querySelectorAll('img');
-      await Promise.all(
-        Array.from(images).map((img) => {
-          if (img.complete) return Promise.resolve();
-          return new Promise((resolve) => {
-            img.onload = resolve;
-            img.onerror = resolve; // resolve mesmo em erro pra não travar
-          });
-        })
-      );
-
-      const dataUrl = await toPng(capaRef.current, {
-        cacheBust: true,
-        pixelRatio: 2,
-        width: 1200,
-        height: 675,
-        backgroundColor: '#ffffff',
-        skipFonts: true,
-        imagePlaceholder: 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mNkYAAAAAYAAjCB0C8AAAAASUVORK5CYII=',
-        filter: (node) => {
-          return node.tagName !== 'IFRAME';
-        }
-      });
-
-      const link = document.createElement('a');
-      link.href = dataUrl;
-      link.download = `capa-linkedin-${numero}.png`;
-      document.body.appendChild(link);
-      link.click();
-      document.body.removeChild(link);
-    } catch (err: any) {
-      console.error('Erro detalhado ao gerar imagem:', err);
-      console.error('Stack:', err?.stack);
-      console.error('Message:', err?.message);
-      console.error('Name:', err?.name);
-      alert(`Erro ao gerar imagem: ${err?.message || JSON.stringify(err)}`);
-    }
+    setStatus({ tipo: "gerando" });
+    await gerarCapaPNG(capaRef.current, {
+      nomeArquivo,
+      onSuccess: () => {
+        setStatus({ tipo: "sucesso" });
+        setTimeout(() => setStatus({ tipo: "idle" }), 2500);
+      },
+      onError: (err) => {
+        setStatus({ tipo: "erro", msg: err.message || "Erro desconhecido ao gerar PNG." });
+      },
+    });
   };
 
   return (
-    <div className="w-full min-h-screen bg-[#0f0f0f] p-8">
-      <div className="max-w-7xl mx-auto space-y-8">
+    <div className="w-full min-h-screen bg-[#0f0f0f]">
+      <div className="max-w-[1400px] mx-auto px-6 py-8 space-y-6">
         {/* Preview da Capa */}
-        <div className="flex justify-center">
-          <div ref={capaRef}>
-            <LinkedInCover
-              numero={numero}
-              titulo={titulo}
-              legendaLinha1={legendaLinha1}
-              legendaLinha2={legendaLinha2}
-              fotoUrl={fotoUrl}
-              usarLegenda1={usarLegenda1}
-              usarSubtitulo={usarSubtitulo}
-              IconeCustomizado={() => <IconeCustomizado IconeComponente={IconeComponente} />}
-            />
+        <section
+          aria-label="Preview da capa"
+          className="bg-[#141414] rounded-xl border border-gray-800 p-6 overflow-hidden"
+        >
+          <div className="flex items-center justify-between mb-4">
+            <h2 className="text-lg font-semibold text-white font-['Archivo',sans-serif]">
+              Preview
+            </h2>
+            <span className="text-xs text-gray-500 font-mono">1200 × 675 px</span>
           </div>
-        </div>
-
-        <div className="bg-[#1a1a1a] rounded-lg shadow-xl p-6 space-y-4 border border-gray-800">
-          <h2 className="text-xl font-semibold mb-4 text-white font-['Archivo',sans-serif]">Editor de Capa LinkedIn - Avançado</h2>
-
-          <div className="grid grid-cols-2 gap-4">
-            <div>
-              <label className="block text-sm font-medium mb-2 text-gray-300">
-                Número da Edição
-              </label>
-              <input
-                type="text"
-                value={numero}
-                onChange={(e) => setNumero(e.target.value)}
-                className="w-full px-3 py-2 bg-[#2a2a2a] border border-gray-700 text-white rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-                placeholder="49"
+          <div className="flex justify-center overflow-auto">
+            <div
+              ref={capaRef}
+              style={{
+                transform: "scale(0.75)",
+                transformOrigin: "top center",
+                marginBottom: "-170px",
+              }}
+            >
+              <LinkedInCover
+                numero={numero}
+                titulo={titulo}
+                legendaLinha1={legendaLinha1}
+                legendaLinha2={legendaLinha2}
+                fotoUrl={fotoUrl}
+                usarLegenda1={usarLegenda1}
+                usarSubtitulo={usarSubtitulo}
+                IconeCustomizado={() => <IconeCustomizado IconeComponente={IconeComponente} />}
               />
             </div>
+          </div>
+        </section>
 
-            <div>
-              <label className="block text-sm font-medium mb-2 text-gray-300">
-                Ícone
-              </label>
-              <select
-                value={iconeEscolhido}
-                onChange={(e) => setIconeEscolhido(e.target.value)}
-                className="w-full px-3 py-2 bg-[#2a2a2a] border border-gray-700 text-white rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+        {/* Form em 2 colunas */}
+        <section
+          aria-label="Configuração da capa"
+          className="bg-[#141414] rounded-xl border border-gray-800 p-6"
+        >
+          <div className="flex items-center gap-3 mb-6">
+            <div className="w-8 h-8 rounded-lg bg-[#FFC528] flex items-center justify-center">
+              <LucideIcons.Settings size={16} className="text-black" />
+            </div>
+            <h2 className="text-xl font-semibold text-white font-['Archivo',sans-serif]">
+              Configuração
+            </h2>
+          </div>
+
+          <div className="grid lg:grid-cols-2 gap-8">
+            {/* Coluna esquerda */}
+            <div className="space-y-5">
+              {/* Número e Ícone */}
+              <div className="grid grid-cols-2 gap-4">
+                <FieldWrapper label="Número da edição" htmlFor="numero">
+                  <input
+                    id="numero"
+                    type="text"
+                    value={numero}
+                    onChange={(e) => setNumero(e.target.value.replace(/[^\d]/g, ""))}
+                    className="input-base"
+                    placeholder="49"
+                    maxLength={4}
+                  />
+                </FieldWrapper>
+
+                <FieldWrapper label="Ícone" htmlFor="icone">
+                  <div className="flex gap-2">
+                    <select
+                      id="icone"
+                      value={iconeEscolhido}
+                      onChange={(e) => setIconeEscolhido(e.target.value)}
+                      className="input-base flex-1"
+                    >
+                      {Object.keys(iconesDisponiveis).map((nome) => (
+                        <option key={nome} value={nome}>
+                          {nome}
+                        </option>
+                      ))}
+                    </select>
+                    <div className="w-10 h-10 flex-shrink-0 rounded-md bg-[#ffe8a4] flex items-center justify-center">
+                      <IconeComponente size={20} strokeWidth={1.8} color="#371B01" />
+                    </div>
+                  </div>
+                </FieldWrapper>
+              </div>
+
+              {/* Título */}
+              <FieldWrapper
+                label="Título principal"
+                htmlFor="titulo"
+                hint={
+                  <span className={tituloLongo ? "text-amber-400" : "text-gray-500"}>
+                    {caracteresTitulo} caracteres {tituloLongo && " — pode quebrar visualmente acima de 80"}
+                  </span>
+                }
               >
-                {Object.keys(iconesDisponiveis).map((nomeIcone) => (
-                  <option key={nomeIcone} value={nomeIcone}>
-                    {nomeIcone}
-                  </option>
-                ))}
-              </select>
+                <textarea
+                  id="titulo"
+                  value={titulo}
+                  onChange={(e) => setTitulo(e.target.value)}
+                  rows={3}
+                  className="input-base resize-none"
+                  placeholder="Ex: Mercado B2C: o uso estratégico e consciente do parcelamento"
+                />
+              </FieldWrapper>
+
+              {/* Legendas */}
+              <div className="space-y-4 bg-[#0f0f0f] rounded-lg p-4 border border-gray-800">
+                <h3 className="text-sm font-semibold text-gray-300">Legendas sobre a foto</h3>
+
+                <ToggleField
+                  id="usarLegenda1"
+                  label="Linha 1 (texto leve)"
+                  checked={usarLegenda1}
+                  onChange={setUsarLegenda1}
+                >
+                  <input
+                    type="text"
+                    value={legendaLinha1}
+                    onChange={(e) => setLegendaLinha1(e.target.value)}
+                    disabled={!usarLegenda1}
+                    className="input-base"
+                    placeholder="Tecnologia que destrava"
+                  />
+                </ToggleField>
+
+                <ToggleField
+                  id="usarSubtitulo"
+                  label="Linha 2 (negrito, destaque)"
+                  checked={usarSubtitulo}
+                  onChange={setUsarSubtitulo}
+                >
+                  <input
+                    type="text"
+                    value={legendaLinha2}
+                    onChange={(e) => setLegendaLinha2(e.target.value)}
+                    disabled={!usarSubtitulo}
+                    className="input-base"
+                    placeholder="o seu dia a dia financeiro."
+                  />
+                </ToggleField>
+              </div>
+            </div>
+
+            {/* Coluna direita - Foto */}
+            <div className="space-y-4">
+              <FieldWrapper
+                label="URL da foto"
+                htmlFor="foto"
+                hint="Cole URL externa (Unsplash) ou caminho /assets/..."
+              >
+                <input
+                  id="foto"
+                  type="text"
+                  value={fotoUrl}
+                  onChange={(e) => setFotoUrl(e.target.value)}
+                  className="input-base"
+                  placeholder="https://images.unsplash.com/..."
+                />
+              </FieldWrapper>
+
+              <UnsplashSearch onSelectImage={(url) => setFotoUrl(url)} grupoIndex={0} />
             </div>
           </div>
 
-          <div>
-            <label className="block text-sm font-medium mb-2 text-gray-300">
-              Título Principal
-            </label>
-            <textarea
-              value={titulo}
-              onChange={(e) => setTitulo(e.target.value)}
-              rows={3}
-              className="w-full px-3 py-2 bg-[#2a2a2a] border border-gray-700 text-white rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-              placeholder="Mercado B2C: o uso estratégico e consciente do parcelamento"
-            />
-          </div>
+          {/* Barra de ação */}
+          <div className="mt-6 pt-6 border-t border-gray-800 flex items-center justify-between gap-4 flex-wrap">
+            <StatusBadge status={status} />
 
-          <div>
-            <div className="flex items-center gap-3 mb-2">
-              <input
-                type="checkbox"
-                id="usarLegenda1"
-                checked={usarLegenda1}
-                onChange={(e) => setUsarLegenda1(e.target.checked)}
-                className="w-4 h-4 text-blue-600 border-gray-600 rounded focus:ring-blue-500"
-              />
-              <label htmlFor="usarLegenda1" className="text-sm font-medium text-gray-300">
-                Usar Legenda - Linha 1 (sobre a imagem)
-              </label>
-            </div>
-            <input
-              type="text"
-              value={legendaLinha1}
-              onChange={(e) => setLegendaLinha1(e.target.value)}
-              disabled={!usarLegenda1}
-              className="w-full px-3 py-2 bg-[#2a2a2a] border border-gray-700 text-white rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 disabled:bg-[#1a1a1a] disabled:cursor-not-allowed disabled:text-gray-600"
-              placeholder="Tecnologia que destrava"
-            />
-          </div>
-
-          <div>
-            <div className="flex items-center gap-3 mb-2">
-              <input
-                type="checkbox"
-                id="usarSubtitulo"
-                checked={usarSubtitulo}
-                onChange={(e) => setUsarSubtitulo(e.target.checked)}
-                className="w-4 h-4 text-blue-600 border-gray-600 rounded focus:ring-blue-500"
-              />
-              <label htmlFor="usarSubtitulo" className="text-sm font-medium text-gray-300">
-                Usar Legenda - Linha 2 (negrito sobre a imagem)
-              </label>
-            </div>
-            <input
-              type="text"
-              value={legendaLinha2}
-              onChange={(e) => setLegendaLinha2(e.target.value)}
-              disabled={!usarSubtitulo}
-              className="w-full px-3 py-2 bg-[#2a2a2a] border border-gray-700 text-white rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 disabled:bg-[#1a1a1a] disabled:cursor-not-allowed disabled:text-gray-600"
-              placeholder="o seu dia a dia financeiro."
-            />
-          </div>
-
-          <div>
-            <label className="block text-sm font-medium mb-2 text-gray-300">
-              URL da Foto
-            </label>
-            <input
-              type="text"
-              value={fotoUrl}
-              onChange={(e) => setFotoUrl(e.target.value)}
-              className="w-full px-3 py-2 bg-[#2a2a2a] border border-gray-700 text-white rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 mb-2"
-              placeholder="URL da imagem"
-            />
-            <UnsplashSearch
-              onSelectImage={(url) => setFotoUrl(url)}
-              grupoIndex={0}
-            />
-            <p className="text-xs text-gray-500 mt-2">
-              Use "figma:asset/..." para assets importados ou URLs externas
-            </p>
-          </div>
-
-          <div className="pt-4 border-t border-gray-700">
-            <h3 className="text-sm font-medium mb-2 text-gray-300">Preview do Ícone Selecionado</h3>
-            <div className="inline-flex items-center justify-center w-16 h-16 bg-[#ffe8a4] rounded-lg">
-              <IconeComponente size={40} strokeWidth={1.5} color="#371B01" />
-            </div>
-          </div>
-
-          <div className="pt-4 border-t border-gray-700">
             <button
               onClick={gerarImagem}
-              className="px-4 py-2 bg-[#FFC528] text-black rounded-md hover:bg-[#FFD04F] transition-colors font-bold shadow-lg flex items-center gap-2 text-sm"
+              disabled={status.tipo === "gerando" || !titulo.trim()}
+              className="px-6 py-3 bg-[#FFC528] text-black rounded-lg hover:bg-[#FFD04F] active:bg-[#E8B320] transition-colors font-bold shadow-lg flex items-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
             >
-              <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
-              </svg>
-              Gerar Imagem
+              {status.tipo === "gerando" ? (
+                <>
+                  <Spinner />
+                  Gerando imagem...
+                </>
+              ) : (
+                <>
+                  <LucideIcons.Download size={18} />
+                  Baixar PNG
+                </>
+              )}
             </button>
           </div>
-        </div>
+        </section>
       </div>
+
+      <GlobalStyles />
     </div>
+  );
+}
+
+/* ============ Componentes auxiliares ============ */
+
+function FieldWrapper({
+  label,
+  htmlFor,
+  hint,
+  children,
+}: {
+  label: string;
+  htmlFor: string;
+  hint?: React.ReactNode;
+  children: React.ReactNode;
+}) {
+  return (
+    <div className="space-y-1.5">
+      <label htmlFor={htmlFor} className="block text-sm font-medium text-gray-300">
+        {label}
+      </label>
+      {children}
+      {hint && <div className="text-xs">{hint}</div>}
+    </div>
+  );
+}
+
+function ToggleField({
+  id,
+  label,
+  checked,
+  onChange,
+  children,
+}: {
+  id: string;
+  label: string;
+  checked: boolean;
+  onChange: (v: boolean) => void;
+  children: React.ReactNode;
+}) {
+  return (
+    <div className="space-y-2">
+      <label className="flex items-center gap-2 cursor-pointer select-none">
+        <input
+          type="checkbox"
+          id={id}
+          checked={checked}
+          onChange={(e) => onChange(e.target.checked)}
+          className="w-4 h-4 accent-[#FFC528] rounded"
+        />
+        <span className="text-sm text-gray-300">{label}</span>
+      </label>
+      {children}
+    </div>
+  );
+}
+
+function StatusBadge({ status }: { status: Status }) {
+  if (status.tipo === "idle") {
+    return <span className="text-xs text-gray-500">Pronto para gerar</span>;
+  }
+  if (status.tipo === "gerando") {
+    return (
+      <span className="flex items-center gap-2 text-xs text-[#FFC528]">
+        <Spinner size={12} /> Processando imagem…
+      </span>
+    );
+  }
+  if (status.tipo === "sucesso") {
+    return (
+      <span className="flex items-center gap-2 text-xs text-emerald-400">
+        <LucideIcons.CheckCircle2 size={14} /> Imagem baixada com sucesso!
+      </span>
+    );
+  }
+  return (
+    <span className="flex items-start gap-2 text-xs text-red-400 max-w-md">
+      <LucideIcons.AlertCircle size={14} className="mt-0.5 flex-shrink-0" />
+      <span>
+        <strong>Erro:</strong> {status.msg}
+      </span>
+    </span>
+  );
+}
+
+function Spinner({ size = 16 }: { size?: number }) {
+  return (
+    <svg
+      className="animate-spin"
+      style={{ width: size, height: size }}
+      viewBox="0 0 24 24"
+      fill="none"
+    >
+      <circle cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="3" strokeOpacity="0.25" />
+      <path
+        d="M12 2a10 10 0 0 1 10 10"
+        stroke="currentColor"
+        strokeWidth="3"
+        strokeLinecap="round"
+      />
+    </svg>
+  );
+}
+
+function GlobalStyles() {
+  return (
+    <style>{`
+      .input-base {
+        width: 100%;
+        padding: 10px 12px;
+        background: #1f1f1f;
+        border: 1px solid #333;
+        color: white;
+        border-radius: 8px;
+        font-size: 14px;
+        transition: border-color 0.15s, background 0.15s;
+      }
+      .input-base:focus {
+        outline: none;
+        border-color: #FFC528;
+        background: #242424;
+      }
+      .input-base:disabled {
+        background: #141414;
+        color: #555;
+        cursor: not-allowed;
+      }
+    `}</style>
   );
 }

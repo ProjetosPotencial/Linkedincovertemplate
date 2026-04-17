@@ -6,7 +6,7 @@ export default function CoverEditor() {
   const [titulo, setTitulo] = useState("Mercado B2C: o uso estratégico e consciente do parcelamento");
   const [legendaLinha1, setLegendaLinha1] = useState("Tecnologia que destrava");
   const [legendaLinha2, setLegendaLinha2] = useState("o seu dia a dia financeiro.");
-  const [fotoUrl, setFotoUrl] = useState("figma:asset/94f0de88dd7da2aa7b58f6680bcc081b5b16c90f.png");
+  const [fotoUrl, setFotoUrl] = useState("/assets/94f0de88dd7da2aa7b58f6680bcc081b5b16c90f.png");
 
   return (
     <div className="w-full min-h-screen bg-gray-50 p-8">

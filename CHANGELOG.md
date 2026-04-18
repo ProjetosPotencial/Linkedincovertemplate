@@ -1,5 +1,21 @@
 # Changelog
 
+## v1.2.1 — Correção do espaço em branco nas capas geradas
+
+### 🐛 Bug corrigido
+
+As capas geradas pela v1.2 apresentavam **espaço em branco extra** nas bordas direita e inferior. O card amarelo ocupava apenas 1200×675 dentro de um canvas de 1280×720, deixando ~80px de faixa branca à direita e ~45px embaixo.
+
+**Causa:** Uso simultâneo de `width/height` (tamanho do elemento) e `canvasWidth/canvasHeight` (tamanho do canvas final) no `html-to-image` criava um canvas maior que o elemento renderizado.
+
+**Correção:** Remoção de `canvasWidth` e `canvasHeight`. Agora o `pixelRatio = 1.0667` escala proporcionalmente ambas as dimensões:
+- 1200 × 1.0667 = **1280**
+- 675 × 1.0667 = **720**
+
+A proporção 16:9 é preservada exatamente (1200/675 = 1280/720 = 1.7778), então não há distorção nem bordas vazias.
+
+---
+
 ## v1.2 — ZIP único + tamanho LinkedIn otimizado
 
 ### 🎁 Novos recursos

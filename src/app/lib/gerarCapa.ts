@@ -50,8 +50,15 @@ export interface GerarDownloadOpcoes extends GerarOpcoes {
 
 /**
  * Gera o dataURL PNG do elemento nas dimensões finais desejadas.
- * O elemento é renderizado em 1200x675 (tamanho do design) e reescalado
- * para o tamanho de saída solicitado usando pixelRatio apropriado.
+ *
+ * Estratégia: renderizamos o elemento no tamanho base (1200×675) e escalamos
+ * proporcionalmente via pixelRatio para atingir o tamanho de saída (1280×720).
+ *
+ * Para LinkedIn (1280×720), o ratio é 1280/1200 = 1.0667, que escala
+ * proporcionalmente ambas as dimensões (1200→1280 e 675→720).
+ *
+ * NÃO usamos canvasWidth/canvasHeight separados — isso criaria um canvas
+ * maior que o elemento, gerando espaço em branco nas bordas.
  */
 async function gerarDataURL(
   elemento: HTMLElement,
@@ -66,19 +73,16 @@ async function gerarDataURL(
   // 3. Espera frame
   await new Promise((resolve) => requestAnimationFrame(resolve));
 
-  // 4. Calcula pixelRatio para atingir o tamanho final desejado
-  //    pixelRatio = tamanhoDesejado / tamanhoBase
-  //    Ex: para 1280x720 a partir de 1200x675 → ratio ≈ 1.0667
+  // 4. pixelRatio escala ambas as dimensões proporcionalmente
+  //    1200 × 1.0667 = 1280  |  675 × 1.0667 = 720 ✓
   const pixelRatio = tamanho.width / BASE_WIDTH;
 
-  // 5. Gera o PNG
+  // 5. Gera o PNG no tamanho final
   const dataUrl = await toPng(elemento, {
     cacheBust: true,
     pixelRatio,
     width: BASE_WIDTH,
     height: BASE_HEIGHT,
-    canvasWidth: tamanho.width,
-    canvasHeight: tamanho.height,
     backgroundColor: "#ffffff",
     skipFonts: false,
     fetchRequestInit: {

@@ -2,7 +2,8 @@ import { useState, useRef, useMemo } from "react";
 import LinkedInCover from "./LinkedInCover";
 import * as LucideIcons from "lucide-react";
 import UnsplashSearch from "./UnsplashSearch";
-import { gerarCapaPNG } from "../lib/gerarCapa";
+import { gerarCapaBlob } from "../lib/gerarCapa";
+import JSZip from "jszip";
 
 const iconesDisponiveis = {
   CreditCard: LucideIcons.CreditCard,
@@ -131,12 +132,14 @@ export default function GeradorLote() {
     const total = capasGeradas.length;
     let sucessos = 0;
     let erros = 0;
+    const zip = new JSZip();
+    const pastaCapas = zip.folder(`parcele-news-capas`);
 
     setProgresso({ tipo: "gerando", atual: 0, total, sucessos: 0, erros: 0 });
 
     for (let i = 0; i < total; i++) {
       setVisualizandoIndice(i);
-      // aguarda render após mudança
+      // aguarda render após mudança de índice
       await new Promise((resolve) => setTimeout(resolve, 350));
 
       if (!capaRef.current) break;
@@ -149,16 +152,46 @@ export default function GeradorLote() {
         .replace(/^-+|-+$/g, "")
         .slice(0, 40);
 
-      const ok = await gerarCapaPNG(capaRef.current, {
-        nomeArquivo: `parcele-news-${capasGeradas[i].numero}-${slug || "capa"}`,
-      });
+      const numeroPadded = capasGeradas[i].numero.padStart(2, "0");
+      const nomeArquivo = `parcele-news-${numeroPadded}-${slug || "capa"}.png`;
 
-      if (ok) sucessos++;
-      else erros++;
+      try {
+        const blob = await gerarCapaBlob(capaRef.current);
+        pastaCapas?.file(nomeArquivo, blob);
+        sucessos++;
+      } catch (err) {
+        console.error(`[lote] Erro na capa ${i + 1}:`, err);
+        erros++;
+      }
 
       setProgresso({ tipo: "gerando", atual: i + 1, total, sucessos, erros });
-      // delay pequeno entre downloads
-      await new Promise((resolve) => setTimeout(resolve, 250));
+      // pequeno delay pra não travar a UI
+      await new Promise((resolve) => setTimeout(resolve, 80));
+    }
+
+    // Gera o arquivo ZIP e dispara download
+    if (sucessos > 0) {
+      try {
+        const zipBlob = await zip.generateAsync({
+          type: "blob",
+          compression: "DEFLATE",
+          compressionOptions: { level: 6 },
+        });
+
+        const dataStr = new Date().toISOString().slice(0, 10); // YYYY-MM-DD
+        const link = document.createElement("a");
+        link.href = URL.createObjectURL(zipBlob);
+        link.download = `parcele-news-capas-${dataStr}.zip`;
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+        // libera memória
+        setTimeout(() => URL.revokeObjectURL(link.href), 2000);
+      } catch (err) {
+        console.error("[lote] Erro ao gerar ZIP:", err);
+        erros = sucessos; // reporta todos como erro se ZIP falhar
+        sucessos = 0;
+      }
     }
 
     setProgresso({ tipo: "concluido", sucessos, erros });
@@ -184,6 +217,7 @@ export default function GeradorLote() {
                   #{capaAtual.numero} · {capaAtual.titulo.slice(0, 60)}
                   {capaAtual.titulo.length > 60 ? "…" : ""}
                 </p>
+                <p className="text-xs text-gray-600 font-mono mt-0.5">Saída: 1280 × 720 px</p>
               </div>
               <div className="flex gap-2">
                 <button
@@ -439,12 +473,12 @@ export default function GeradorLote() {
                   >
                     {progresso.tipo === "gerando" ? (
                       <>
-                        <Spinner /> Baixando...
+                        <Spinner /> Processando...
                       </>
                     ) : (
                       <>
-                        <LucideIcons.Download size={18} />
-                        Baixar todas ({capasGeradas.length})
+                        <LucideIcons.FileArchive size={18} />
+                        Baixar ZIP ({capasGeradas.length} capas)
                       </>
                     )}
                   </button>
@@ -527,11 +561,14 @@ function ProgressBar({ progresso }: { progresso: ProgressoLote }) {
 
   if (progresso.tipo === "gerando") {
     const pct = Math.round((progresso.atual / progresso.total) * 100);
+    const finalizandoZip = progresso.atual === progresso.total;
     return (
       <div className="mb-4 p-4 bg-[#0f0f0f] rounded-lg border border-[#FFC528]/30">
         <div className="flex items-center justify-between mb-2 text-sm">
           <span className="text-white font-medium">
-            Baixando imagens: {progresso.atual} / {progresso.total}
+            {finalizandoZip
+              ? "Compactando ZIP..."
+              : `Gerando imagens: ${progresso.atual} / ${progresso.total}`}
           </span>
           <span className="text-[#FFC528] font-mono">{pct}%</span>
         </div>
@@ -542,7 +579,7 @@ function ProgressBar({ progresso }: { progresso: ProgressoLote }) {
           />
         </div>
         <div className="flex gap-4 mt-2 text-xs text-gray-400">
-          <span className="text-emerald-400">✓ {progresso.sucessos} sucesso(s)</span>
+          <span className="text-emerald-400">✓ {progresso.sucessos} processada(s)</span>
           {progresso.erros > 0 && <span className="text-red-400">✗ {progresso.erros} erro(s)</span>}
         </div>
       </div>
@@ -564,8 +601,10 @@ function ProgressBar({ progresso }: { progresso: ProgressoLote }) {
           <LucideIcons.CheckCircle2 size={18} className="text-emerald-400" />
         )}
         <span className="text-sm text-white font-medium">
-          Concluído: {progresso.sucessos} imagem(ns) baixada(s)
-          {temErro && `, ${progresso.erros} com erro`}
+          {progresso.sucessos > 0
+            ? `ZIP baixado com ${progresso.sucessos} capa(s)`
+            : "Falha ao gerar capas"}
+          {temErro && progresso.sucessos > 0 && `, ${progresso.erros} com erro`}
         </span>
       </div>
     </div>

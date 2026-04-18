@@ -97,7 +97,7 @@ export default function CoverEditorAvancado() {
             <h2 className="text-lg font-semibold text-white font-['Archivo',sans-serif]">
               Preview
             </h2>
-            <span className="text-xs text-gray-500 font-mono">1200 × 675 px</span>
+            <span className="text-xs text-gray-500 font-mono">Saída: 1280 × 720 px</span>
           </div>
           <div className="flex justify-center overflow-auto">
             <div

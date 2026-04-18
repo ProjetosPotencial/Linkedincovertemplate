@@ -1,8 +1,18 @@
 import { toPng } from "html-to-image";
 
 /**
+ * Dimensões do design base (tamanho real renderizado do componente).
+ */
+const BASE_WIDTH = 1200;
+const BASE_HEIGHT = 675;
+
+/**
+ * Dimensão final padrão para LinkedIn (16:9 otimizado).
+ */
+export const TAMANHO_LINKEDIN = { width: 1280, height: 720 } as const;
+
+/**
  * Pré-carrega uma imagem forçando CORS anônimo.
- * Se falhar, resolve mesmo assim (não trava a geração).
  */
 function preloadImageWithCORS(src: string): Promise<void> {
   return new Promise((resolve) => {
@@ -14,9 +24,6 @@ function preloadImageWithCORS(src: string): Promise<void> {
   });
 }
 
-/**
- * Pré-carrega todas as imagens de um container com CORS anônimo.
- */
 async function preloadAllImages(container: HTMLElement): Promise<void> {
   const images = container.querySelectorAll("img");
   const urls = Array.from(images)
@@ -25,58 +32,115 @@ async function preloadAllImages(container: HTMLElement): Promise<void> {
   await Promise.all(urls.map(preloadImageWithCORS));
 }
 
-export interface GerarCapaOpcoes {
+export interface TamanhoSaida {
+  width: number;
+  height: number;
+}
+
+export interface GerarOpcoes {
+  /** Tamanho final da imagem (padrão 1280x720 — ideal LinkedIn) */
+  tamanho?: TamanhoSaida;
+}
+
+export interface GerarDownloadOpcoes extends GerarOpcoes {
   nomeArquivo: string;
   onSuccess?: () => void;
   onError?: (err: Error) => void;
 }
 
 /**
+ * Gera o dataURL PNG do elemento nas dimensões finais desejadas.
+ * O elemento é renderizado em 1200x675 (tamanho do design) e reescalado
+ * para o tamanho de saída solicitado usando pixelRatio apropriado.
+ */
+async function gerarDataURL(
+  elemento: HTMLElement,
+  tamanho: TamanhoSaida = TAMANHO_LINKEDIN
+): Promise<string> {
+  // 1. Fontes
+  await document.fonts.ready;
+
+  // 2. Pré-carrega imagens
+  await preloadAllImages(elemento);
+
+  // 3. Espera frame
+  await new Promise((resolve) => requestAnimationFrame(resolve));
+
+  // 4. Calcula pixelRatio para atingir o tamanho final desejado
+  //    pixelRatio = tamanhoDesejado / tamanhoBase
+  //    Ex: para 1280x720 a partir de 1200x675 → ratio ≈ 1.0667
+  const pixelRatio = tamanho.width / BASE_WIDTH;
+
+  // 5. Gera o PNG
+  const dataUrl = await toPng(elemento, {
+    cacheBust: true,
+    pixelRatio,
+    width: BASE_WIDTH,
+    height: BASE_HEIGHT,
+    canvasWidth: tamanho.width,
+    canvasHeight: tamanho.height,
+    backgroundColor: "#ffffff",
+    skipFonts: false,
+    fetchRequestInit: {
+      cache: "no-cache",
+      mode: "cors",
+      credentials: "omit",
+    },
+    filter: (node: HTMLElement) => {
+      if (node.tagName === "IFRAME") return false;
+      if (node.tagName === "IMG") {
+        const img = node as HTMLImageElement;
+        if (img.src && (!img.complete || img.naturalWidth === 0)) {
+          console.warn("[gerarCapa] Pulando imagem quebrada:", img.src);
+          return false;
+        }
+      }
+      return true;
+    },
+  });
+
+  return dataUrl;
+}
+
+/**
+ * Converte um data URL (base64) em Blob.
+ */
+function dataUrlToBlob(dataUrl: string): Blob {
+  const [header, base64] = dataUrl.split(",");
+  const mimeMatch = header.match(/:(.*?);/);
+  const mime = mimeMatch ? mimeMatch[1] : "image/png";
+  const binary = atob(base64);
+  const len = binary.length;
+  const bytes = new Uint8Array(len);
+  for (let i = 0; i < len; i++) {
+    bytes[i] = binary.charCodeAt(i);
+  }
+  return new Blob([bytes], { type: mime });
+}
+
+/**
+ * Gera uma PNG e retorna o Blob (sem disparar download).
+ * Útil para agrupar múltiplas imagens num ZIP.
+ */
+export async function gerarCapaBlob(
+  elemento: HTMLElement,
+  opcoes: GerarOpcoes = {}
+): Promise<Blob> {
+  const dataUrl = await gerarDataURL(elemento, opcoes.tamanho);
+  return dataUrlToBlob(dataUrl);
+}
+
+/**
  * Gera um PNG do elemento e dispara o download automático.
- * Retorna true em caso de sucesso, false em caso de erro.
+ * Mantido para compat. com o editor individual.
  */
 export async function gerarCapaPNG(
   elemento: HTMLElement,
-  opcoes: GerarCapaOpcoes
+  opcoes: GerarDownloadOpcoes
 ): Promise<boolean> {
   try {
-    // 1. Aguarda fontes carregarem
-    await document.fonts.ready;
+    const dataUrl = await gerarDataURL(elemento, opcoes.tamanho);
 
-    // 2. Pré-carrega imagens com CORS
-    await preloadAllImages(elemento);
-
-    // 3. Aguarda frame de render
-    await new Promise((resolve) => requestAnimationFrame(resolve));
-
-    // 4. Gera o PNG
-    const dataUrl = await toPng(elemento, {
-      cacheBust: true,
-      pixelRatio: 2,
-      width: 1200,
-      height: 675,
-      backgroundColor: "#ffffff",
-      skipFonts: false,
-      fetchRequestInit: {
-        cache: "no-cache",
-        mode: "cors",
-        credentials: "omit",
-      },
-      filter: (node: HTMLElement) => {
-        // Pula iframes e imagens quebradas
-        if (node.tagName === "IFRAME") return false;
-        if (node.tagName === "IMG") {
-          const img = node as HTMLImageElement;
-          if (img.src && (!img.complete || img.naturalWidth === 0)) {
-            console.warn("[gerarCapaPNG] Pulando imagem quebrada:", img.src);
-            return false;
-          }
-        }
-        return true;
-      },
-    });
-
-    // 5. Dispara download
     const link = document.createElement("a");
     link.href = dataUrl;
     link.download = opcoes.nomeArquivo.endsWith(".png")

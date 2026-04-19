@@ -122,19 +122,18 @@ export default function LinkedInCover({
 
       {/* Logo parcele aqui */}
       <div
-        className="absolute overflow-hidden"
-        style={{ height: "33px", left: "32px", top: "39px", width: "192px" }}
+        className="absolute"
+        style={{ height: "40px", left: "32px", top: "36px", width: "200px" }}
       >
         <img
           alt="Parcele Aqui"
-          className="absolute max-w-none"
           src={LOGO_URL}
           crossOrigin="anonymous"
           style={{
-            height: "280.41%",
-            left: "-7.98%",
-            top: "-94.89%",
-            width: "115.96%",
+            width: "100%",
+            height: "100%",
+            objectFit: "contain",
+            objectPosition: "left center",
           }}
         />
       </div>

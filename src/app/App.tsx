@@ -58,14 +58,16 @@ export default function App() {
 
       {/* Footer */}
       <footer className="bg-[#111111] border-t border-gray-800/80">
-        <div className="max-w-[1400px] mx-auto px-6 py-5 flex items-center justify-center gap-3 flex-wrap">
-          <span className="text-gray-500 text-xs">Desenvolvido por</span>
+        <div className="max-w-[1400px] mx-auto px-6 py-6 flex items-center justify-center gap-4 flex-wrap">
+          <span className="text-gray-500 text-sm">Desenvolvido por</span>
           <img
             src={imgLogoPotencialFooter}
             alt="Potencial Tecnologia"
-            className="h-12 opacity-90"
+            className="h-20 opacity-95"
           />
-          <span className="text-gray-500 text-xs">• v1.1 • 2026</span>
+          <span className="text-gray-500 text-xs font-mono">
+            v{__APP_VERSION__} • {new Date().getFullYear()}
+          </span>
         </div>
       </footer>
     </div>

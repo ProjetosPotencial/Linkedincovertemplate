@@ -1,5 +1,64 @@
 # Changelog
 
+## v1.4.0 — Exportação 1:1, sorteio de imagens, upload local e previews
+
+### 🐛 Bug crítico corrigido — espaço branco na imagem exportada
+
+**Sintoma:** capas exportadas saíam com grande espaço branco embaixo e à direita, layout comprimido no canto superior esquerdo (não correspondia ao preview).
+
+**Causa raiz:** o componente renderizava em 1200×675 e a exportação tentava esticar pra 1280×720 via `pixelRatio = 1.0667`. A biblioteca `html-to-image` criava um canvas de 1280×720 mas renderizava o conteúdo numa área proporcionalmente menor, gerando a borda branca.
+
+**Correção:**
+- `LinkedInCover.tsx` agora renderiza em **1280×720 nativo** (proporção 16:9 exata do LinkedIn)
+- `gerarCapa.ts` captura em 1:1, sem pixelRatio fantasma
+- `capaRef` passou a apontar pro LinkedInCover puro — o scale visual do preview fica num wrapper externo que não interfere na exportação
+
+### 🎁 Novos recursos
+
+#### Botão "Sortear outras opções" de imagem
+Cada categoria do banco Unsplash agora tem **10 imagens** (antes 4). O botão 🎲 sorteia 4 novas do pool sem bater a API do Unsplash, ideal pra quando a primeira sugestão não agrada.
+
+#### Upload de imagem local
+Tanto no **Editor** quanto no **Gerador em Lote** agora tem botão "Enviar imagem" que abre seletor de arquivo do computador. A imagem é convertida pra `data:image/...;base64,...` e aplicada direto — sem upload pra nuvem, sem dependência externa.
+
+- Validação de tipo (só imagens) e tamanho (máx 5MB)
+- Badge "Imagem local em uso" quando ativa
+- Botão ✕ pra descartar e voltar pro banco Unsplash
+- data URLs renderizam sem `crossOrigin` (mesmo host) e exportam perfeitamente
+
+#### Mini preview da capa por bloco no Gerador em Lote
+Cada bloco aberto mostra uma **prévia compacta 360×202** da capa final usando os títulos reais, imagem, ícone e legendas configurados. Vê-se como vai ficar a primeira capa do bloco antes mesmo de gerar.
+
+Além do mini preview, o cabeçalho de cada bloco (mesmo fechado) mostra:
+- **Thumbnail 32×32** da imagem selecionada (ou ícone de "sem imagem")
+- **Preview do ícone** no estilo do card amarelo da capa
+
+Permite revisar rapidamente a configuração dos 6 blocos só olhando os headers.
+
+#### Favicon customizado
+Novo favicon SVG com o "P" da identidade Parcele Aqui (fundo amarelo #FFC528, letra #371B01). Metadata HTML enriquecida com theme-color, Open Graph e descrição.
+
+### 🔧 Arquivos alterados/criados
+
+- ✏️ `src/app/components/LinkedInCover.tsx` — redimensionado 1280×720
+- ✏️ `src/app/lib/gerarCapa.ts` — reescrito sem pixelRatio
+- ✏️ `src/app/components/UnsplashSearch.tsx` — sorteio + upload + banco 2,5× maior
+- ✏️ `src/app/components/GeradorLote.tsx` — thumbnails + mini preview + ref corrigido
+- ✏️ `src/app/components/CoverEditorAvancado.tsx` — ref corrigido, integração com upload
+- ➕ `src/app/components/MiniPreviewBloco.tsx` — novo componente de preview compacto
+- ✏️ `public/favicon.svg` — novo favicon Parcele Aqui
+- ✏️ `index.html` — metadata, Open Graph, theme-color
+- ✏️ `package.json` — bump 1.3.0 → 1.4.0
+
+### 📏 Como testar que o bug do espaço branco foi resolvido
+
+1. Após `npm install` e `npm run dev`, abra o app
+2. No **Editor**, clique em "Baixar PNG"
+3. Abra a imagem baixada — deve ter exatamente **1280×720 px**, preenchida até as bordas, sem faixas brancas
+4. Compare lado a lado com `capa_news_49.png` (referência aprovada) — proporções e posição dos elementos devem bater
+
+---
+
 ## v1.3.0 — Legendas por bloco, preview de ícone e versionamento dinâmico
 
 ### 🎁 Novos recursos

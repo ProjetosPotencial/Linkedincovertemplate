@@ -1,23 +1,26 @@
 import { toPng } from "html-to-image";
 
 /**
- * Dimensões do design base (tamanho real renderizado do componente).
+ * Dimensões do design base. PRECISAM bater com as do LinkedInCover.tsx.
+ * Mudamos de 1200×675 para 1280×720 para gerar a PNG em 1:1,
+ * sem precisar de pixelRatio e sem espaço branco nas bordas.
  */
-const BASE_WIDTH = 1200;
-const BASE_HEIGHT = 675;
+const BASE_WIDTH = 1280;
+const BASE_HEIGHT = 720;
 
-/**
- * Dimensão final padrão para LinkedIn (16:9 otimizado).
- */
-export const TAMANHO_LINKEDIN = { width: 1280, height: 720 } as const;
+/** Tamanho final padrão da saída (igual ao base → captura 1:1). */
+export const TAMANHO_LINKEDIN = { width: BASE_WIDTH, height: BASE_HEIGHT } as const;
 
 /**
  * Pré-carrega uma imagem forçando CORS anônimo.
+ * data URLs (upload local) resolvem instantaneamente sem crossOrigin.
  */
-function preloadImageWithCORS(src: string): Promise<void> {
+function preloadImage(src: string): Promise<void> {
   return new Promise((resolve) => {
     const img = new Image();
-    img.crossOrigin = "anonymous";
+    if (!src.startsWith("data:")) {
+      img.crossOrigin = "anonymous";
+    }
     img.onload = () => resolve();
     img.onerror = () => resolve();
     img.src = src;
@@ -29,7 +32,7 @@ async function preloadAllImages(container: HTMLElement): Promise<void> {
   const urls = Array.from(images)
     .map((img) => img.src)
     .filter((src) => !!src);
-  await Promise.all(urls.map(preloadImageWithCORS));
+  await Promise.all(urls.map(preloadImage));
 }
 
 export interface TamanhoSaida {
@@ -38,7 +41,7 @@ export interface TamanhoSaida {
 }
 
 export interface GerarOpcoes {
-  /** Tamanho final da imagem (padrão 1280x720 — ideal LinkedIn) */
+  /** Tamanho final da imagem (padrão 1280×720 — ideal LinkedIn) */
   tamanho?: TamanhoSaida;
 }
 
@@ -49,16 +52,14 @@ export interface GerarDownloadOpcoes extends GerarOpcoes {
 }
 
 /**
- * Gera o dataURL PNG do elemento nas dimensões finais desejadas.
+ * Gera o dataURL PNG do elemento em 1:1 com suas dimensões reais.
  *
- * Estratégia: renderizamos o elemento no tamanho base (1200×675) e escalamos
- * proporcionalmente via pixelRatio para atingir o tamanho de saída (1280×720).
+ * Como o componente já renderiza em 1280×720, NÃO usamos pixelRatio
+ * nem canvasWidth/Height — isso evita o bug de espaço em branco
+ * quando o canvas fica maior que o conteúdo renderizado.
  *
- * Para LinkedIn (1280×720), o ratio é 1280/1200 = 1.0667, que escala
- * proporcionalmente ambas as dimensões (1200→1280 e 675→720).
- *
- * NÃO usamos canvasWidth/canvasHeight separados — isso criaria um canvas
- * maior que o elemento, gerando espaço em branco nas bordas.
+ * Se `tamanho` for diferente do base, aplicamos pixelRatio proporcional
+ * (válido só quando as proporções batem: 16:9).
  */
 async function gerarDataURL(
   elemento: HTMLElement,
@@ -70,14 +71,13 @@ async function gerarDataURL(
   // 2. Pré-carrega imagens
   await preloadAllImages(elemento);
 
-  // 3. Espera frame
+  // 3. Espera frame (garante layout estabilizado)
   await new Promise((resolve) => requestAnimationFrame(resolve));
 
-  // 4. pixelRatio escala ambas as dimensões proporcionalmente
-  //    1200 × 1.0667 = 1280  |  675 × 1.0667 = 720 ✓
-  const pixelRatio = tamanho.width / BASE_WIDTH;
+  // 4. Calcula pixelRatio só se saída for diferente do base
+  const pixelRatio = tamanho.width === BASE_WIDTH ? 1 : tamanho.width / BASE_WIDTH;
 
-  // 5. Gera o PNG no tamanho final
+  // 5. Gera o PNG
   const dataUrl = await toPng(elemento, {
     cacheBust: true,
     pixelRatio,
@@ -106,9 +106,7 @@ async function gerarDataURL(
   return dataUrl;
 }
 
-/**
- * Converte um data URL (base64) em Blob.
- */
+/** Converte um data URL (base64) em Blob. */
 function dataUrlToBlob(dataUrl: string): Blob {
   const [header, base64] = dataUrl.split(",");
   const mimeMatch = header.match(/:(.*?);/);
@@ -134,10 +132,7 @@ export async function gerarCapaBlob(
   return dataUrlToBlob(dataUrl);
 }
 
-/**
- * Gera um PNG do elemento e dispara o download automático.
- * Mantido para compat. com o editor individual.
- */
+/** Gera um PNG do elemento e dispara o download automático. */
 export async function gerarCapaPNG(
   elemento: HTMLElement,
   opcoes: GerarDownloadOpcoes

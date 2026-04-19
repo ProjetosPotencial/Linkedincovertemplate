@@ -77,25 +77,27 @@ export default function CoverEditorAvancado() {
             </h2>
             <span className="text-xs text-gray-500 font-mono">Saída: 1280 × 720 px</span>
           </div>
-          <div className="flex justify-center overflow-auto">
+          <div className="flex justify-center overflow-hidden">
             <div
-              ref={capaRef}
               style={{
-                transform: "scale(0.75)",
+                transform: "scale(0.5)",
                 transformOrigin: "top center",
-                marginBottom: "-170px",
+                width: "1280px",
+                height: "360px",
               }}
             >
-              <LinkedInCover
-                numero={numero}
-                titulo={titulo}
-                legendaLinha1={legendaLinha1}
-                legendaLinha2={legendaLinha2}
-                fotoUrl={fotoUrl}
-                usarLegenda1={usarLegenda1}
-                usarSubtitulo={usarSubtitulo}
-                IconeCustomizado={() => <IconeCustomizado IconeComponente={IconeComponente} />}
-              />
+              <div ref={capaRef}>
+                <LinkedInCover
+                  numero={numero}
+                  titulo={titulo}
+                  legendaLinha1={legendaLinha1}
+                  legendaLinha2={legendaLinha2}
+                  fotoUrl={fotoUrl}
+                  usarLegenda1={usarLegenda1}
+                  usarSubtitulo={usarSubtitulo}
+                  IconeCustomizado={() => <IconeCustomizado IconeComponente={IconeComponente} />}
+                />
+              </div>
             </div>
           </div>
         </section>
@@ -215,7 +217,11 @@ export default function CoverEditorAvancado() {
                 />
               </FieldWrapper>
 
-              <UnsplashSearch onSelectImage={(url) => setFotoUrl(url)} grupoIndex={0} />
+              <UnsplashSearch
+                onSelectImage={(url) => setFotoUrl(url)}
+                grupoIndex={0}
+                valorAtual={fotoUrl}
+              />
             </div>
           </div>
 

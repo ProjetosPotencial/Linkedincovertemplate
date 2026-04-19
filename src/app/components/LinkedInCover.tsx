@@ -15,13 +15,21 @@ interface LinkedInCoverProps {
 const LOGO_URL = "/assets/f105090c0d8399c4c5ddf6f3b68c32fc5dfd387f.png";
 const FOTO_PADRAO = "/assets/94f0de88dd7da2aa7b58f6680bcc081b5b16c90f.png";
 
+/**
+ * Dimensões do componente — 1280×720 (proporção 16:9, ideal LinkedIn).
+ * Esses valores PRECISAM bater com os usados em gerarCapa.ts (BASE_WIDTH/HEIGHT).
+ * Layout proporcional da referência 1200×675 (escala 1.0667).
+ */
+const WIDTH = 1280;
+const HEIGHT = 720;
+
 function IconePadrao() {
   return (
     <div
-      className="absolute left-[72px] top-[282px] flex items-center justify-center"
-      style={{ width: "80px", height: "80px" }}
+      className="absolute flex items-center justify-center"
+      style={{ left: "77px", top: "301px", width: "85px", height: "85px" }}
     >
-      <svg style={{ width: "48px", height: "48px" }} fill="none" viewBox="0 0 80 80">
+      <svg style={{ width: "51px", height: "51px" }} fill="none" viewBox="0 0 80 80">
         <g>
           <path d={svgPaths.p325f5470} fill="#371B01" />
         </g>
@@ -33,6 +41,7 @@ function IconePadrao() {
 /**
  * Resolve a URL da foto:
  * - figma:asset/xxx → /assets/xxx (legado)
+ * - data:image/... → base64 (upload local, passa direto)
  * - URL externa → mantém (precisa aceitar CORS)
  * - vazio → foto padrão
  */
@@ -56,36 +65,40 @@ export default function LinkedInCover({
   usarSubtitulo = true,
 }: LinkedInCoverProps) {
   const fotoResolvida = resolveFotoUrl(fotoUrl);
+  const isDataUrl = fotoResolvida.startsWith("data:");
 
   return (
-    <div className="bg-white relative" style={{ width: "1200px", height: "675px" }}>
+    <div
+      className="bg-white relative"
+      style={{ width: `${WIDTH}px`, height: `${HEIGHT}px` }}
+    >
       {/* Shape amarelo */}
       <div
         className="absolute"
         style={{
           backgroundColor: "#ffcb31",
-          height: "539px",
-          left: "32px",
-          right: "32px",
-          top: "104px",
-          borderBottomLeftRadius: "32px",
-          borderBottomRightRadius: "32px",
-          borderTopLeftRadius: "32px",
-          borderTopRightRadius: "320px",
+          height: "575px",
+          left: "34px",
+          right: "34px",
+          top: "111px",
+          borderBottomLeftRadius: "34px",
+          borderBottomRightRadius: "34px",
+          borderTopLeftRadius: "34px",
+          borderTopRightRadius: "341px",
         }}
       />
 
       {/* Container da foto */}
-      <div className="absolute" style={{ right: "32px", bottom: "32px" }}>
+      <div className="absolute" style={{ right: "34px", bottom: "34px" }}>
         <div
           className="relative overflow-hidden bg-gradient-to-br from-gray-300 to-gray-400"
           style={{
-            height: "470px",
-            width: "500px",
-            borderBottomLeftRadius: "32px",
-            borderBottomRightRadius: "32px",
-            borderTopLeftRadius: "200px",
-            borderTopRightRadius: "32px",
+            height: "501px",
+            width: "533px",
+            borderBottomLeftRadius: "34px",
+            borderBottomRightRadius: "34px",
+            borderTopLeftRadius: "213px",
+            borderTopRightRadius: "34px",
           }}
         >
           {fotoResolvida ? (
@@ -93,7 +106,8 @@ export default function LinkedInCover({
               alt=""
               className="absolute object-cover"
               src={fotoResolvida}
-              crossOrigin="anonymous"
+              // data URLs (upload local) não precisam de crossOrigin; externas precisam
+              {...(isDataUrl ? {} : { crossOrigin: "anonymous" as const })}
               style={{ width: "100%", height: "100%" }}
             />
           ) : (
@@ -123,7 +137,7 @@ export default function LinkedInCover({
       {/* Logo parcele aqui */}
       <div
         className="absolute"
-        style={{ height: "40px", left: "32px", top: "36px", width: "200px" }}
+        style={{ height: "43px", left: "34px", top: "38px", width: "213px" }}
       >
         <img
           alt="Parcele Aqui"
@@ -143,13 +157,13 @@ export default function LinkedInCover({
         className="absolute font-['Kufam',sans-serif] text-right"
         style={{
           color: "#371b01",
-          fontSize: "17px",
+          fontSize: "18px",
           fontWeight: 700,
-          right: "32px",
+          right: "34px",
           letterSpacing: "-0.02em",
           lineHeight: "1.2",
-          top: "40px",
-          marginBottom: "16px",
+          top: "43px",
+          margin: 0,
         }}
       >
         Parcele News
@@ -160,12 +174,13 @@ export default function LinkedInCover({
         className="absolute font-['Kufam',sans-serif] text-right"
         style={{
           color: "#371b01",
-          fontSize: "50px",
+          fontSize: "53px",
           fontWeight: 700,
-          right: "32px",
+          right: "34px",
           letterSpacing: "-0.02em",
           lineHeight: "1",
-          top: "calc(40px + 17px * 1.2 + 16px)",
+          top: "82px",
+          margin: 0,
         }}
       >
         #{numero}
@@ -173,13 +188,13 @@ export default function LinkedInCover({
 
       {/* Card do ícone */}
       <div
-        className="absolute rounded-[12px]"
+        className="absolute rounded-[13px]"
         style={{
           backgroundColor: "#ffe8a4",
-          height: "80px",
-          left: "72px",
-          top: "282px",
-          width: "80px",
+          height: "85px",
+          left: "77px",
+          top: "301px",
+          width: "85px",
         }}
       />
 
@@ -191,13 +206,14 @@ export default function LinkedInCover({
         className="absolute font-['Kufam',sans-serif]"
         style={{
           color: "#1a1a1a",
-          fontSize: "42px",
+          fontSize: "45px",
           fontWeight: 700,
-          left: "72px",
+          left: "77px",
           letterSpacing: "-0.02em",
           lineHeight: "1.15",
-          top: "398px",
-          width: "565px",
+          top: "425px",
+          width: "603px",
+          margin: 0,
         }}
       >
         {titulo}
@@ -208,19 +224,19 @@ export default function LinkedInCover({
         <div
           className="absolute font-['Kufam',sans-serif] text-white"
           style={{
-            left: "calc(1200px - 32px - 500px + 44px)",
-            bottom: "44px",
-            right: "calc(32px + 44px)",
+            left: `calc(${WIDTH}px - 34px - 533px + 47px)`,
+            bottom: "47px",
+            right: "calc(34px + 47px)",
             textShadow: "0 2px 12px rgba(0,0,0,0.6)",
           }}
         >
           {usarLegenda1 && (
-            <p style={{ fontSize: "20px", fontWeight: 400, lineHeight: "1.3", margin: 0 }}>
+            <p style={{ fontSize: "21px", fontWeight: 400, lineHeight: "1.3", margin: 0 }}>
               {legendaLinha1}
             </p>
           )}
           {usarSubtitulo && (
-            <p style={{ fontSize: "20px", fontWeight: 700, lineHeight: "1.3", margin: 0 }}>
+            <p style={{ fontSize: "21px", fontWeight: 700, lineHeight: "1.3", margin: 0 }}>
               {legendaLinha2}
             </p>
           )}

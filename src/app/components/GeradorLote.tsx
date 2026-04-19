@@ -4,6 +4,7 @@ import * as LucideIcons from "lucide-react";
 import UnsplashSearch from "./UnsplashSearch";
 import { gerarCapaBlob } from "../lib/gerarCapa";
 import SelectIconeComPreview, { iconesDisponiveis } from "./SelectIconeComPreview";
+import MiniPreviewBloco from "./MiniPreviewBloco";
 import JSZip from "jszip";
 
 function IconeCustomizado({ IconeComponente }: { IconeComponente: any }) {
@@ -248,25 +249,27 @@ export default function GeradorLote() {
               </div>
             </div>
 
-            <div className="flex justify-center overflow-auto">
+            <div className="flex justify-center overflow-hidden">
               <div
-                ref={capaRef}
                 style={{
-                  transform: "scale(0.75)",
+                  transform: "scale(0.5)",
                   transformOrigin: "top center",
-                  marginBottom: "-170px",
+                  width: "1280px",
+                  height: "360px",
                 }}
               >
-                <LinkedInCover
-                  numero={capaAtual.numero}
-                  titulo={capaAtual.titulo}
-                  legendaLinha1={capaAtual.legendaLinha1}
-                  legendaLinha2={capaAtual.legendaLinha2}
-                  fotoUrl={capaAtual.fotoUrl}
-                  usarLegenda1={capaAtual.usarLegenda1}
-                  usarSubtitulo={capaAtual.usarSubtitulo}
-                  IconeCustomizado={() => <IconeCustomizado IconeComponente={IconeComponente} />}
-                />
+                <div ref={capaRef}>
+                  <LinkedInCover
+                    numero={capaAtual.numero}
+                    titulo={capaAtual.titulo}
+                    legendaLinha1={capaAtual.legendaLinha1}
+                    legendaLinha2={capaAtual.legendaLinha2}
+                    fotoUrl={capaAtual.fotoUrl}
+                    usarLegenda1={capaAtual.usarLegenda1}
+                    usarSubtitulo={capaAtual.usarSubtitulo}
+                    IconeCustomizado={() => <IconeCustomizado IconeComponente={IconeComponente} />}
+                  />
+                </div>
               </div>
             </div>
 
@@ -399,23 +402,40 @@ export default function GeradorLote() {
                       open={idx === 0}
                     >
                       <summary className="cursor-pointer px-4 py-3 text-sm font-medium text-gray-300 hover:bg-[#141414] flex items-center justify-between select-none">
-                        <span className="flex items-center gap-2">
-                          <span className="font-bold">Bloco {idx + 1}</span>
-                          <span className="text-gray-500">
-                            · Capas {capaInicio}–{capaFim}
+                        <span className="flex items-center gap-3">
+                          {/* Thumbnail da imagem + ícone */}
+                          <span className="flex items-center gap-1.5 flex-shrink-0">
+                            {bloco.imagem ? (
+                              <img
+                                src={bloco.imagem}
+                                alt=""
+                                className="w-8 h-8 rounded object-cover border border-gray-700"
+                                loading="lazy"
+                                crossOrigin={bloco.imagem.startsWith("data:") ? undefined : "anonymous"}
+                              />
+                            ) : (
+                              <div className="w-8 h-8 rounded bg-[#1a1a1a] border border-gray-700 flex items-center justify-center">
+                                <LucideIcons.ImageOff size={12} className="text-gray-600" />
+                              </div>
+                            )}
+                            {(() => {
+                              const Ic = iconesDisponiveis[bloco.icone as keyof typeof iconesDisponiveis];
+                              return Ic ? (
+                                <div className="w-8 h-8 rounded bg-[#ffe8a4] flex items-center justify-center">
+                                  <Ic size={16} strokeWidth={1.6} color="#371B01" />
+                                </div>
+                              ) : null;
+                            })()}
                           </span>
-                          {!emUso && (
-                            <span className="text-[10px] text-gray-600 bg-gray-900 px-2 py-0.5 rounded">
-                              não usado
+                          <span className="flex flex-col items-start">
+                            <span className="font-bold">Bloco {idx + 1}</span>
+                            <span className="text-gray-500 text-xs">
+                              Capas {capaInicio}–{capaFim}
+                              {!emUso && " · não usado"}
                             </span>
-                          )}
+                          </span>
                         </span>
-                        <div className="flex items-center gap-2">
-                          {bloco.imagem && (
-                            <LucideIcons.Image size={14} className="text-emerald-400" />
-                          )}
-                          <LucideIcons.ChevronDown size={16} />
-                        </div>
+                        <LucideIcons.ChevronDown size={16} />
                       </summary>
 
                       <div className="p-4 space-y-4 border-t border-gray-800">
@@ -446,7 +466,35 @@ export default function GeradorLote() {
                         <UnsplashSearch
                           onSelectImage={selecionarImagemUnsplash}
                           grupoIndex={idx}
+                          valorAtual={bloco.imagem}
                         />
+
+                        {/* Mini preview da capa do bloco */}
+                        <div className="pt-3 border-t border-gray-800 space-y-2">
+                          <h4 className="text-xs font-semibold text-gray-400 uppercase tracking-wider flex items-center gap-1.5">
+                            <LucideIcons.Eye size={12} />
+                            Prévia do bloco
+                          </h4>
+                          <div className="flex justify-center">
+                            <MiniPreviewBloco
+                              numero={String((idx * quantidadePorVez) + (parseInt(numeroInicial) || 1))}
+                              titulo={
+                                titulos.split("\n").filter((t) => t.trim() !== "")[idx * quantidadePorVez] ||
+                                "Título de exemplo do bloco"
+                              }
+                              icone={bloco.icone}
+                              imagem={bloco.imagem || FOTO_PADRAO}
+                              legendaLinha1={bloco.legendaLinha1}
+                              legendaLinha2={bloco.legendaLinha2}
+                              usarLegenda1={bloco.usarLegenda1}
+                              usarLegenda2={bloco.usarLegenda2}
+                              largura={360}
+                            />
+                          </div>
+                          <p className="text-[10px] text-gray-600 text-center">
+                            Primeira capa do bloco · {quantidadePorVez > 1 ? `${quantidadePorVez} capas compartilham esse visual` : "1 capa neste bloco"}
+                          </p>
+                        </div>
 
                         {/* Legendas do bloco */}
                         <div className="pt-3 border-t border-gray-800 space-y-3">

@@ -3,29 +3,7 @@ import LinkedInCover from "./LinkedInCover";
 import * as LucideIcons from "lucide-react";
 import UnsplashSearch from "./UnsplashSearch";
 import { gerarCapaPNG } from "../lib/gerarCapa";
-
-const iconesDisponiveis = {
-  CreditCard: LucideIcons.CreditCard,
-  Wallet: LucideIcons.Wallet,
-  TrendingUp: LucideIcons.TrendingUp,
-  DollarSign: LucideIcons.DollarSign,
-  Sparkles: LucideIcons.Sparkles,
-  Target: LucideIcons.Target,
-  BarChart3: LucideIcons.BarChart3,
-  PieChart: LucideIcons.PieChart,
-  ShoppingCart: LucideIcons.ShoppingCart,
-  Store: LucideIcons.Store,
-  Zap: LucideIcons.Zap,
-  TrendingDown: LucideIcons.TrendingDown,
-  LayoutDashboard: LucideIcons.LayoutDashboard,
-  Megaphone: LucideIcons.Megaphone,
-  Lightbulb: LucideIcons.Lightbulb,
-  Rocket: LucideIcons.Rocket,
-  Users: LucideIcons.Users,
-  ShieldCheck: LucideIcons.ShieldCheck,
-  Lock: LucideIcons.Lock,
-  Unlock: LucideIcons.Unlock,
-};
+import SelectIconeComPreview, { iconesDisponiveis } from "./SelectIconeComPreview";
 
 function IconeCustomizado({ IconeComponente }: { IconeComponente: any }) {
   return (
@@ -154,23 +132,11 @@ export default function CoverEditorAvancado() {
                 </FieldWrapper>
 
                 <FieldWrapper label="Ícone" htmlFor="icone">
-                  <div className="flex gap-2">
-                    <select
-                      id="icone"
-                      value={iconeEscolhido}
-                      onChange={(e) => setIconeEscolhido(e.target.value)}
-                      className="input-base flex-1"
-                    >
-                      {Object.keys(iconesDisponiveis).map((nome) => (
-                        <option key={nome} value={nome}>
-                          {nome}
-                        </option>
-                      ))}
-                    </select>
-                    <div className="w-10 h-10 flex-shrink-0 rounded-md bg-[#ffe8a4] flex items-center justify-center">
-                      <IconeComponente size={20} strokeWidth={1.8} color="#371B01" />
-                    </div>
-                  </div>
+                  <SelectIconeComPreview
+                    id="icone"
+                    valor={iconeEscolhido}
+                    onChange={setIconeEscolhido}
+                  />
                 </FieldWrapper>
               </div>
 

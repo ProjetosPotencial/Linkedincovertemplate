@@ -1,5 +1,82 @@
 # Changelog
 
+## v1.3.0 — Legendas por bloco, preview de ícone e versionamento dinâmico
+
+### 🎁 Novos recursos
+
+#### Legendas personalizadas por bloco no Gerador em Lote
+Cada bloco de capas agora tem suas **próprias legendas independentes**:
+- Legenda linha 1 (regular)
+- Legenda linha 2 (negrito)
+- Toggles individuais pra ativar/desativar cada linha por bloco
+
+Permite, por exemplo, que o Bloco 1 (Meios de Pagamento) tenha a legenda "Tecnologia que destrava **o seu dia a dia financeiro.**" enquanto o Bloco 5 (Pix Parcelado) tenha "Tecnologia que destrava **o futuro do Pix Parcelado.**" — cada um com suas próprias ativações.
+
+#### Preview visual do ícone selecionado
+Ao lado de todo select de ícone, agora há um **card de preview** mostrando o ícone escolhido no mesmo estilo do card amarelo da capa final. Aplicado em:
+- Editor individual
+- Cada bloco do Gerador em Lote (versão compacta)
+
+Torna a escolha do ícone muito mais visual — você vê exatamente como vai ficar sem precisar gerar a capa.
+
+#### Versionamento dinâmico no footer
+A versão exibida no rodapé agora é lida **automaticamente** do `package.json` via `__APP_VERSION__` (exposto pelo Vite em build). Ano exibido também é dinâmico (`new Date().getFullYear()`). Não precisa mais atualizar manualmente a versão no código.
+
+#### Logo Potencial Tecnologia aumentado no footer
+Aumentado de `h-12` (48px) para `h-20` (80px), dando mais presença à marca na interface.
+
+### 🔧 Implementação técnica
+
+**Novo componente**: `src/app/components/SelectIconeComPreview.tsx`
+- Exporta `iconesDisponiveis` centralizado (era duplicado em 2 arquivos antes)
+- Componente reutilizável de select + preview de ícone
+- Prop `tamanhoPreview` aceita `"pequeno"` ou `"medio"` pra adaptação contextual
+
+**Nova estrutura no GeradorLote**:
+- Tipo `BlocoConfig` com todos os campos editáveis por bloco (ícone, imagem, legendas, toggles)
+- State único `blocos: BlocoConfig[]` substitui 6 states separados
+- Função `atualizarBloco(index, patch)` pra mutação imutável
+- Contador `quantidadeBlocosNecessarios` mostra quais blocos estão em uso (baseado em títulos + tamanho de grupo)
+- Blocos não usados ficam com `opacity-60` e tag "não usado"
+
+**Vite config**:
+- Lê `package.json` em tempo de build
+- Expõe `__APP_VERSION__` via `define`
+- Arquivo `src/vite-env.d.ts` adiciona declaração TS
+
+### 💫 UX
+
+- **Info box** no lugar da antiga seção "Legendas padrão" explicando que legendas são agora por bloco
+- Em cada bloco `<details>`: indicador visual `Image` icon (verde) quando bloco tem imagem configurada
+- Tag "não usado" em blocos além do necessário (baseado no total de títulos)
+- `select-none` nos summaries pra evitar seleção acidental de texto ao abrir/fechar
+
+### ⚠️ Breaking changes
+
+Apenas internos — o state do lote agora é uma única estrutura `blocos[]` em vez de 6 arrays paralelos (`imagens`, `icones`, etc.). Comportamento do usuário final é retrocompatível: ao abrir pela primeira vez, tudo já vem preenchido com defaults razoáveis.
+
+---
+
+## v1.2.2 — Correção do logo gigante na exportação
+
+### 🐛 Bug corrigido
+
+Na v1.2.1, o logo "parceleaqui" aparecia **enorme** nas capas exportadas (ocupando mais de 30% da capa), enquanto no preview do app aparecia corretamente pequeno. O número "#XX" também saía em posição errada.
+
+**Causa:** O código original do logo usava um truque frágil exportado do Figma — valores percentuais extremos (`height: 280.41%`, `top: -94.89%`, `left: -7.98%`) com `overflow: hidden` no container. Funcionava no navegador mas o `html-to-image` calculava esses percentuais de forma diferente ao serializar pro canvas, fazendo o logo escapar do container.
+
+**Correção:** Substituído pelo padrão CSS robusto:
+- Container do logo: `200×40px`
+- Imagem: `width: 100%; height: 100%; object-fit: contain; object-position: left center`
+
+`object-fit: contain` é uma propriedade CSS nativa, estável em todos os renderizadores (browser, html-to-image, dom-to-image, etc). Resultado visualmente idêntico ao preview do app.
+
+### ✅ Teste de validação
+
+Renderizado via Playwright em 1200×675 → escalado pra 1280×720 via LANCZOS → comparação visual com o modelo Parcele News #72 → **idêntico**. Logo compacto, número à direita, card amarelo preenchendo todo o canvas sem sobras.
+
+---
+
 ## v1.2.1 — Correção do espaço em branco nas capas geradas
 
 ### 🐛 Bug corrigido

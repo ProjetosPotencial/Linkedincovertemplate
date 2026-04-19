@@ -2,7 +2,10 @@ import { defineConfig } from 'vite'
 import path from 'path'
 import tailwindcss from '@tailwindcss/vite'
 import react from '@vitejs/plugin-react'
+import { readFileSync } from 'fs'
 
+// Lê a versão direto do package.json para expor no app
+const pkg = JSON.parse(readFileSync(path.resolve(__dirname, 'package.json'), 'utf-8'))
 
 function figmaAssetResolver() {
   return {
@@ -29,6 +32,11 @@ export default defineConfig({
       // Alias @ to the src directory
       '@': path.resolve(__dirname, './src'),
     },
+  },
+
+  // Expõe a versão do package.json pro código via __APP_VERSION__
+  define: {
+    __APP_VERSION__: JSON.stringify(pkg.version),
   },
 
   // File types to support raw imports. Never add .css, .tsx, or .ts files to this.

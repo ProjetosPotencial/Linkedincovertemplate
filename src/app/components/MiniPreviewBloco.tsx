@@ -60,7 +60,7 @@ export default function MiniPreviewBloco({
           IconeCustomizado={() => (
             <div
               className="absolute flex items-center justify-center"
-              style={{ left: "77px", top: "301px", width: "85px", height: "85px" }}
+              style={{ left: "77px", top: "278px", width: "85px", height: "85px" }}
             >
               <IconeComponente size={51} strokeWidth={1.5} color="#371B01" />
             </div>

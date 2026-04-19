@@ -1,5 +1,75 @@
 # Changelog
 
+## v1.4.2 — Ajustes de layout: tamanhos e posições alinhadas à referência
+
+### 🎨 Ajustes visuais baseados na referência `capa_news_49.png`
+
+Após comparação pixel-a-pixel com a capa aprovada, ajustei os seguintes elementos pra bater com a referência:
+
+**Logo "parceleaqui"** — Ainda estava pequeno demais na v1.4.1:
+- Altura: 60px → **64px**
+- Largura: 300px → **320px**
+- Left: 34px → 40px
+- Top: 32px → 28px
+
+**"Parcele News" (topo direito)** — Fonte pequena demais:
+- Font-size: 18px → **22px**
+- Right: 34px → 40px
+- Top: 43px → 36px
+
+**"#N" (número da edição)** — Pode ficar maior, igual à referência:
+- Font-size: 53px → **60px**
+- Right: 34px → 40px
+- Top: 82px → 66px
+
+**Card amarelo do ícone** — Estava muito baixo (o título empurrava o conjunto pra baixo do centro):
+- Top: 301px → **278px**
+- Dimensões mantidas: 85×85px, left 77px
+
+**Ícone dentro do card** — Sincronizado com o card:
+- Top: 301px → **278px** (em IconePadrao, IconeCustomizado do Editor, Lote e MiniPreviewBloco)
+
+**Título principal** — Posição sincronizada com card:
+- Top: 425px → **390px**
+- Mantém 45px de fonte e 603px de largura
+
+**Shape amarelo (curva superior direita)** — Curva mais pronunciada, igual à referência:
+- border-top-right-radius: 341px → **380px**
+
+### 🎯 Resultado esperado
+
+Com esses ajustes, a capa exportada deve agora:
+- Ter logo Parcele Aqui **grande e visível** no topo
+- Ter "Parcele News #N" proporcional ao logo (não mais "minúsculo")
+- Ter o ícone perfeitamente alinhado dentro do card amarelo
+- Ter o conjunto card + título centralizado verticalmente, não empurrado pra baixo
+- Ter a curva do shape amarelo na forma orgânica da referência
+
+### 🔧 Arquivos alterados
+
+- ✏️ `src/app/components/LinkedInCover.tsx` — 7 ajustes de tamanho/posição
+- ✏️ `src/app/components/CoverEditorAvancado.tsx` — sincronização do ícone (top 278)
+- ✏️ `src/app/components/GeradorLote.tsx` — sincronização do ícone (top 278)
+- ✏️ `src/app/components/MiniPreviewBloco.tsx` — sincronização do ícone (top 278)
+
+---
+
+## v1.4.1 — Patch: alinhamento do ícone e tamanho do logo
+
+### 🐛 Bugs corrigidos
+
+**Ícone desalinhado do card amarelo** — Os componentes `IconeCustomizado` no Editor (`CoverEditorAvancado.tsx`) e no Lote (`GeradorLote.tsx`) ficaram com coordenadas antigas hardcoded (`left: 72px, top: 282px, size: 48`), enquanto o card amarelo do `LinkedInCover` foi atualizado pra 1280×720 (`left: 77px, top: 301px, size: 51`). Resultado: ícone flutuava 5px à esquerda e 19px acima do card amarelo. Corrigido — todas as 3 posições do ícone agora usam as mesmas coordenadas do card (`77px / 301px / 85×85 / ícone 51px`).
+
+**Logo Parcele Aqui muito pequeno** — Na proporção 1280×720, a altura do logo ficou em 43px (equivalente a 40px na versão anterior 1200×675). Comparando com a referência `capa_news_49.png`, o logo real ocupa ~60px de altura. Aumentado para `height: 60px, width: 300px`, ajustado `top: 32px` pra manter alinhamento visual com "Parcele News #N" do lado direito.
+
+### 🔧 Arquivos alterados
+
+- ✏️ `src/app/components/LinkedInCover.tsx` — logo 43px → 60px
+- ✏️ `src/app/components/CoverEditorAvancado.tsx` — ícone 72/282 → 77/301, size 48 → 51
+- ✏️ `src/app/components/GeradorLote.tsx` — ícone 72/282 → 77/301, size 48 → 51
+
+---
+
 ## v1.4.0 — Exportação 1:1, sorteio de imagens, upload local e previews
 
 ### 🐛 Bug crítico corrigido — espaço branco na imagem exportada

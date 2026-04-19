@@ -27,7 +27,7 @@ function IconePadrao() {
   return (
     <div
       className="absolute flex items-center justify-center"
-      style={{ left: "77px", top: "301px", width: "85px", height: "85px" }}
+      style={{ left: "77px", top: "278px", width: "85px", height: "85px" }}
     >
       <svg style={{ width: "51px", height: "51px" }} fill="none" viewBox="0 0 80 80">
         <g>
@@ -84,7 +84,7 @@ export default function LinkedInCover({
           borderBottomLeftRadius: "34px",
           borderBottomRightRadius: "34px",
           borderTopLeftRadius: "34px",
-          borderTopRightRadius: "341px",
+          borderTopRightRadius: "380px",
         }}
       />
 
@@ -137,7 +137,7 @@ export default function LinkedInCover({
       {/* Logo parcele aqui */}
       <div
         className="absolute"
-        style={{ height: "43px", left: "34px", top: "38px", width: "213px" }}
+        style={{ height: "64px", left: "40px", top: "28px", width: "320px" }}
       >
         <img
           alt="Parcele Aqui"
@@ -157,12 +157,12 @@ export default function LinkedInCover({
         className="absolute font-['Kufam',sans-serif] text-right"
         style={{
           color: "#371b01",
-          fontSize: "18px",
+          fontSize: "22px",
           fontWeight: 700,
-          right: "34px",
+          right: "40px",
           letterSpacing: "-0.02em",
           lineHeight: "1.2",
-          top: "43px",
+          top: "36px",
           margin: 0,
         }}
       >
@@ -174,12 +174,12 @@ export default function LinkedInCover({
         className="absolute font-['Kufam',sans-serif] text-right"
         style={{
           color: "#371b01",
-          fontSize: "53px",
+          fontSize: "60px",
           fontWeight: 700,
-          right: "34px",
+          right: "40px",
           letterSpacing: "-0.02em",
           lineHeight: "1",
-          top: "82px",
+          top: "66px",
           margin: 0,
         }}
       >
@@ -193,7 +193,7 @@ export default function LinkedInCover({
           backgroundColor: "#ffe8a4",
           height: "85px",
           left: "77px",
-          top: "301px",
+          top: "278px",
           width: "85px",
         }}
       />
@@ -211,7 +211,7 @@ export default function LinkedInCover({
           left: "77px",
           letterSpacing: "-0.02em",
           lineHeight: "1.15",
-          top: "425px",
+          top: "390px",
           width: "603px",
           margin: 0,
         }}

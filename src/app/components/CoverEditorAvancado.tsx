@@ -8,10 +8,10 @@ import SelectIconeComPreview, { iconesDisponiveis } from "./SelectIconeComPrevie
 function IconeCustomizado({ IconeComponente }: { IconeComponente: any }) {
   return (
     <div
-      className="absolute left-[72px] top-[282px] flex items-center justify-center"
-      style={{ width: "80px", height: "80px" }}
+      className="absolute flex items-center justify-center"
+      style={{ left: "77px", top: "278px", width: "85px", height: "85px" }}
     >
-      <IconeComponente size={48} strokeWidth={1.5} color="#371B01" />
+      <IconeComponente size={51} strokeWidth={1.5} color="#371B01" />
     </div>
   );
 }

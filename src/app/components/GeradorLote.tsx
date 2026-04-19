@@ -3,30 +3,8 @@ import LinkedInCover from "./LinkedInCover";
 import * as LucideIcons from "lucide-react";
 import UnsplashSearch from "./UnsplashSearch";
 import { gerarCapaBlob } from "../lib/gerarCapa";
+import SelectIconeComPreview, { iconesDisponiveis } from "./SelectIconeComPreview";
 import JSZip from "jszip";
-
-const iconesDisponiveis = {
-  CreditCard: LucideIcons.CreditCard,
-  Wallet: LucideIcons.Wallet,
-  TrendingUp: LucideIcons.TrendingUp,
-  DollarSign: LucideIcons.DollarSign,
-  Sparkles: LucideIcons.Sparkles,
-  Target: LucideIcons.Target,
-  BarChart3: LucideIcons.BarChart3,
-  PieChart: LucideIcons.PieChart,
-  ShoppingCart: LucideIcons.ShoppingCart,
-  Store: LucideIcons.Store,
-  Zap: LucideIcons.Zap,
-  TrendingDown: LucideIcons.TrendingDown,
-  LayoutDashboard: LucideIcons.LayoutDashboard,
-  Megaphone: LucideIcons.Megaphone,
-  Lightbulb: LucideIcons.Lightbulb,
-  Rocket: LucideIcons.Rocket,
-  Users: LucideIcons.Users,
-  ShieldCheck: LucideIcons.ShieldCheck,
-  Lock: LucideIcons.Lock,
-  Unlock: LucideIcons.Unlock,
-};
 
 function IconeCustomizado({ IconeComponente }: { IconeComponente: any }) {
   return (
@@ -50,37 +28,54 @@ interface CapaConfig {
   usarSubtitulo: boolean;
 }
 
+/** Configuração por bloco (cada grupo de N capas) */
+interface BlocoConfig {
+  icone: string;
+  imagem: string;
+  legendaLinha1: string;
+  legendaLinha2: string;
+  usarLegenda1: boolean;
+  usarLegenda2: boolean;
+}
+
 type ProgressoLote =
   | { tipo: "idle" }
   | { tipo: "gerando"; atual: number; total: number; sucessos: number; erros: number }
   | { tipo: "concluido"; sucessos: number; erros: number };
 
+const LEGENDA_PADRAO_L1 = "Tecnologia que destrava";
+const LEGENDA_PADRAO_L2 = "o seu dia a dia financeiro.";
+const FOTO_PADRAO = "/assets/94f0de88dd7da2aa7b58f6680bcc081b5b16c90f.png";
+const ICONES_PADRAO = [
+  "CreditCard",
+  "Wallet",
+  "TrendingUp",
+  "DollarSign",
+  "Sparkles",
+  "Target",
+];
+
+function criarBlocoPadrao(index: number): BlocoConfig {
+  return {
+    icone: ICONES_PADRAO[index % ICONES_PADRAO.length],
+    imagem: index === 0 ? FOTO_PADRAO : "",
+    legendaLinha1: LEGENDA_PADRAO_L1,
+    legendaLinha2: LEGENDA_PADRAO_L2,
+    usarLegenda1: true,
+    usarLegenda2: true,
+  };
+}
+
 export default function GeradorLote() {
   const [numeroInicial, setNumeroInicial] = useState("1");
   const [titulos, setTitulos] = useState("");
-  const [legendaLinha1Padrao, setLegendaLinha1Padrao] = useState("Tecnologia que destrava");
-  const [legendaLinha2Padrao, setLegendaLinha2Padrao] = useState("o seu dia a dia financeiro.");
-  const [usarLegenda1, setUsarLegenda1] = useState(true);
-  const [usarSubtitulo, setUsarSubtitulo] = useState(true);
   const [quantidadePorVez, setQuantidadePorVez] = useState(10);
   const capaRef = useRef<HTMLDivElement>(null);
 
-  const [imagens, setImagens] = useState<string[]>([
-    "/assets/94f0de88dd7da2aa7b58f6680bcc081b5b16c90f.png",
-    "",
-    "",
-    "",
-    "",
-    "",
-  ]);
-  const [icones, setIcones] = useState<string[]>([
-    "CreditCard",
-    "Wallet",
-    "TrendingUp",
-    "DollarSign",
-    "Sparkles",
-    "Target",
-  ]);
+  /** Array de blocos (1 config por grupo de N capas) */
+  const [blocos, setBlocos] = useState<BlocoConfig[]>(() =>
+    Array.from({ length: 6 }, (_, i) => criarBlocoPadrao(i))
+  );
 
   const [capasGeradas, setCapasGeradas] = useState<CapaConfig[]>([]);
   const [visualizandoIndice, setVisualizandoIndice] = useState<number | null>(null);
@@ -91,21 +86,35 @@ export default function GeradorLote() {
     [titulos]
   );
 
+  /** Quantos blocos distintos serão usados baseado no número de títulos */
+  const quantidadeBlocosNecessarios = useMemo(
+    () => Math.max(1, Math.ceil(quantidadeTitulos / quantidadePorVez)),
+    [quantidadeTitulos, quantidadePorVez]
+  );
+
+  /** Atualiza um campo específico de um bloco */
+  const atualizarBloco = (index: number, patch: Partial<BlocoConfig>) => {
+    setBlocos((prev) =>
+      prev.map((b, i) => (i === index ? { ...b, ...patch } : b))
+    );
+  };
+
   const gerarCapas = () => {
     const linhasTitulos = titulos.split("\n").filter((t) => t.trim() !== "");
     const numeroInicialInt = parseInt(numeroInicial) || 1;
 
     const capas: CapaConfig[] = linhasTitulos.map((titulo, index) => {
-      const grupo = Math.floor(index / quantidadePorVez);
+      const grupoIndex = Math.floor(index / quantidadePorVez);
+      const bloco = blocos[grupoIndex] || blocos[0];
       return {
         numero: (numeroInicialInt + index).toString(),
         titulo: titulo.trim(),
-        legendaLinha1: legendaLinha1Padrao,
-        legendaLinha2: legendaLinha2Padrao,
-        fotoUrl: imagens[grupo] || imagens[0],
-        icone: icones[grupo] || icones[0],
-        usarLegenda1,
-        usarSubtitulo,
+        legendaLinha1: bloco.legendaLinha1,
+        legendaLinha2: bloco.legendaLinha2,
+        fotoUrl: bloco.imagem || FOTO_PADRAO,
+        icone: bloco.icone,
+        usarLegenda1: bloco.usarLegenda1,
+        usarSubtitulo: bloco.usarLegenda2,
       };
     });
 
@@ -121,9 +130,7 @@ export default function GeradorLote() {
   };
 
   const selecionarImagemUnsplash = (url: string, grupoIndex: number) => {
-    const novasImagens = [...imagens];
-    novasImagens[grupoIndex] = url;
-    setImagens(novasImagens);
+    atualizarBloco(grupoIndex, { imagem: url });
   };
 
   const gerarImagens = async () => {
@@ -334,44 +341,24 @@ export default function GeradorLote() {
                 />
               </FieldWrapper>
 
-              <div className="bg-[#0f0f0f] rounded-lg p-4 border border-gray-800 space-y-4">
-                <h3 className="text-sm font-semibold text-gray-300">Legendas padrão</h3>
-
-                <ToggleField
-                  id="usarLegenda1Lote"
-                  label="Linha 1 em todas"
-                  checked={usarLegenda1}
-                  onChange={setUsarLegenda1}
-                >
-                  <input
-                    type="text"
-                    value={legendaLinha1Padrao}
-                    onChange={(e) => setLegendaLinha1Padrao(e.target.value)}
-                    disabled={!usarLegenda1}
-                    className="input-base"
-                  />
-                </ToggleField>
-
-                <ToggleField
-                  id="usarSubtituloLote"
-                  label="Linha 2 em todas"
-                  checked={usarSubtitulo}
-                  onChange={setUsarSubtitulo}
-                >
-                  <input
-                    type="text"
-                    value={legendaLinha2Padrao}
-                    onChange={(e) => setLegendaLinha2Padrao(e.target.value)}
-                    disabled={!usarSubtitulo}
-                    className="input-base"
-                  />
-                </ToggleField>
+              <div className="bg-[#0f0f0f] rounded-lg p-4 border border-gray-800 space-y-2">
+                <div className="flex items-start gap-2 text-xs text-gray-400">
+                  <LucideIcons.Info size={14} className="flex-shrink-0 mt-0.5 text-[#FFC528]" />
+                  <p>
+                    Configure <strong className="text-gray-300">imagem, ícone e legendas</strong> de cada bloco separadamente
+                    no painel à direita. Cada bloco pode ter textos e visuais diferentes.
+                  </p>
+                </div>
               </div>
             </div>
 
             {/* Coluna direita */}
             <div className="space-y-5">
-              <FieldWrapper label="Tamanho de cada grupo" htmlFor="qtd-grupo" hint="A imagem e ícone mudam a cada N capas">
+              <FieldWrapper
+                label="Tamanho de cada grupo"
+                htmlFor="qtd-grupo"
+                hint="A imagem, ícone e legendas mudam a cada N capas"
+              >
                 <select
                   id="qtd-grupo"
                   value={quantidadePorVez}
@@ -388,64 +375,133 @@ export default function GeradorLote() {
               </FieldWrapper>
 
               <div className="space-y-3">
-                <h3 className="text-sm font-semibold text-gray-300">
-                  Grupos de imagem & ícone
-                </h3>
-                {imagens.map((img, idx) => (
-                  <details
-                    key={idx}
-                    className="bg-[#0f0f0f] rounded-lg border border-gray-800 overflow-hidden"
-                    open={idx === 0}
-                  >
-                    <summary className="cursor-pointer px-4 py-3 text-sm font-medium text-gray-300 hover:bg-[#141414] flex items-center justify-between">
-                      <span>
-                        Grupo {idx + 1} · Capas {idx * quantidadePorVez + 1}–
-                        {(idx + 1) * quantidadePorVez}
-                      </span>
-                      <div className="flex items-center gap-2">
-                        {img && <span className="text-xs text-emerald-400">✓ Imagem</span>}
-                        <LucideIcons.ChevronDown size={16} />
-                      </div>
-                    </summary>
-                    <div className="p-4 space-y-3 border-t border-gray-800">
-                      <FieldWrapper label="Ícone" htmlFor={`icone-${idx}`}>
-                        <select
-                          id={`icone-${idx}`}
-                          value={icones[idx]}
-                          onChange={(e) => {
-                            const novos = [...icones];
-                            novos[idx] = e.target.value;
-                            setIcones(novos);
-                          }}
-                          className="input-base"
-                        >
-                          {Object.keys(iconesDisponiveis).map((nome) => (
-                            <option key={nome} value={nome}>
-                              {nome}
-                            </option>
-                          ))}
-                        </select>
-                      </FieldWrapper>
+                <div className="flex items-center justify-between">
+                  <h3 className="text-sm font-semibold text-gray-300">
+                    Configuração por bloco
+                  </h3>
+                  <span className="text-xs text-gray-500">
+                    {quantidadeBlocosNecessarios} de {blocos.length} em uso
+                  </span>
+                </div>
 
-                      <FieldWrapper label="URL da imagem" htmlFor={`img-${idx}`}>
-                        <input
-                          id={`img-${idx}`}
-                          type="text"
-                          value={img}
-                          onChange={(e) => {
-                            const novas = [...imagens];
-                            novas[idx] = e.target.value;
-                            setImagens(novas);
-                          }}
-                          className="input-base"
-                          placeholder="https://..."
+                {blocos.map((bloco, idx) => {
+                  const capaInicio = idx * quantidadePorVez + 1;
+                  const capaFim = (idx + 1) * quantidadePorVez;
+                  const emUso = idx < quantidadeBlocosNecessarios;
+                  return (
+                    <details
+                      key={idx}
+                      className={`rounded-lg border overflow-hidden transition-opacity ${
+                        emUso
+                          ? "bg-[#0f0f0f] border-gray-800"
+                          : "bg-[#0a0a0a] border-gray-900 opacity-60"
+                      }`}
+                      open={idx === 0}
+                    >
+                      <summary className="cursor-pointer px-4 py-3 text-sm font-medium text-gray-300 hover:bg-[#141414] flex items-center justify-between select-none">
+                        <span className="flex items-center gap-2">
+                          <span className="font-bold">Bloco {idx + 1}</span>
+                          <span className="text-gray-500">
+                            · Capas {capaInicio}–{capaFim}
+                          </span>
+                          {!emUso && (
+                            <span className="text-[10px] text-gray-600 bg-gray-900 px-2 py-0.5 rounded">
+                              não usado
+                            </span>
+                          )}
+                        </span>
+                        <div className="flex items-center gap-2">
+                          {bloco.imagem && (
+                            <LucideIcons.Image size={14} className="text-emerald-400" />
+                          )}
+                          <LucideIcons.ChevronDown size={16} />
+                        </div>
+                      </summary>
+
+                      <div className="p-4 space-y-4 border-t border-gray-800">
+                        {/* Ícone */}
+                        <FieldWrapper label="Ícone" htmlFor={`icone-${idx}`}>
+                          <SelectIconeComPreview
+                            id={`icone-${idx}`}
+                            valor={bloco.icone}
+                            onChange={(novo) => atualizarBloco(idx, { icone: novo })}
+                            tamanhoPreview="pequeno"
+                          />
+                        </FieldWrapper>
+
+                        {/* Imagem */}
+                        <FieldWrapper label="URL da imagem" htmlFor={`img-${idx}`}>
+                          <input
+                            id={`img-${idx}`}
+                            type="text"
+                            value={bloco.imagem}
+                            onChange={(e) =>
+                              atualizarBloco(idx, { imagem: e.target.value })
+                            }
+                            className="input-base"
+                            placeholder="https://..."
+                          />
+                        </FieldWrapper>
+
+                        <UnsplashSearch
+                          onSelectImage={selecionarImagemUnsplash}
+                          grupoIndex={idx}
                         />
-                      </FieldWrapper>
 
-                      <UnsplashSearch onSelectImage={selecionarImagemUnsplash} grupoIndex={idx} />
-                    </div>
-                  </details>
-                ))}
+                        {/* Legendas do bloco */}
+                        <div className="pt-3 border-t border-gray-800 space-y-3">
+                          <h4 className="text-xs font-semibold text-gray-400 uppercase tracking-wider">
+                            Legendas do bloco {idx + 1}
+                          </h4>
+
+                          <ToggleField
+                            id={`leg1-${idx}`}
+                            label="Linha 1 (regular)"
+                            checked={bloco.usarLegenda1}
+                            onChange={(v) =>
+                              atualizarBloco(idx, { usarLegenda1: v })
+                            }
+                          >
+                            <input
+                              type="text"
+                              value={bloco.legendaLinha1}
+                              onChange={(e) =>
+                                atualizarBloco(idx, {
+                                  legendaLinha1: e.target.value,
+                                })
+                              }
+                              disabled={!bloco.usarLegenda1}
+                              className="input-base"
+                              placeholder="Tecnologia que destrava"
+                            />
+                          </ToggleField>
+
+                          <ToggleField
+                            id={`leg2-${idx}`}
+                            label="Linha 2 (negrito)"
+                            checked={bloco.usarLegenda2}
+                            onChange={(v) =>
+                              atualizarBloco(idx, { usarLegenda2: v })
+                            }
+                          >
+                            <input
+                              type="text"
+                              value={bloco.legendaLinha2}
+                              onChange={(e) =>
+                                atualizarBloco(idx, {
+                                  legendaLinha2: e.target.value,
+                                })
+                              }
+                              disabled={!bloco.usarLegenda2}
+                              className="input-base"
+                              placeholder="o seu dia a dia financeiro."
+                            />
+                          </ToggleField>
+                        </div>
+                      </div>
+                    </details>
+                  );
+                })}
               </div>
             </div>
           </div>
